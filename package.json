@@ -1,0 +1,17 @@
+{
+  "name": "zakah-assistant",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "AI zakah assistant: describe your wealth in plain words, get a Shariah-reviewed zakah breakdown by email, and give to a Gaza appeal.",
+  "scripts": {
+    "test": "node --test",
+    "dev": "netlify dev"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Zakah Assistant: work out your zakah in plain words</title>
+  <meta name="description" content="Describe your savings, gold, shares and pension in your own words. Get a clear zakah breakdown based on mainstream scholarly guidance, and give to families in Gaza.">
+  <meta property="og:title" content="Zakah Assistant: work out your zakah in plain words">
+  <meta property="og:description" content="Type “£5k savings, some gold and a pension” and get your zakah breakdown in seconds.">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌙</text></svg>">
+  <script src="config.js"></script>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Ramadan zakah, made simple</p>
+      <h1>Work out your zakah by describing your wealth in your own words</h1>
+      <p class="lead">Tell us what you have, like you would tell a friend. We turn it into a clear breakdown using mainstream scholarly guidance, and show every rule we used.</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="card" id="describe">
+      <label for="wealth-text" class="step"><span>1</span> Describe your savings and assets</label>
+      <textarea id="wealth-text" rows="4" maxlength="1500" placeholder="e.g. I have £5k in savings, £1,200 in my current account, about 30g of 22ct gold jewellery I wear, a workplace pension worth £40k, and £1,500 left on my credit card."></textarea>
+      <div class="chips" aria-label="Examples">
+        <button type="button" class="chip" data-example="£5k savings, some gold jewellery I wear (about 40g, 22 carat) and a workplace pension of £28,000">Savings, gold and a pension</button>
+        <button type="button" class="chip" data-example="£12,000 in a cash ISA, £8,000 of shares in a stocks and shares ISA that I hold long term, £600 of bitcoin, and I owe £2,000 on my credit card">ISAs, shares and crypto</button>
+        <button type="button" class="chip" data-example="I run a small online shop: £6,000 of stock at sale price, £3,500 in the business account, customers owe me £900. Personally £2k savings and a £180k mortgage on my home, paying £950 a month.">Small business</button>
+      </div>
+      <div class="row-actions">
+        <button type="button" id="parse-btn" class="btn primary">Work it out</button>
+        <button type="button" id="manual-btn" class="btn link">Or enter items myself</button>
+      </div>
+      <p id="parse-status" class="status" role="status" aria-live="polite"></p>
+      <p class="fineprint">What you type is sent to an AI service only to read it into the table below. We don't store it.</p>
+    </section>
+
+    <section class="card hidden" id="review">
+      <h2 class="step"><span>2</span> Check what we understood</h2>
+      <div id="questions" class="callout hidden"></div>
+      <h3>Assets</h3>
+      <div id="asset-list"></div>
+      <button type="button" class="btn small" id="add-asset">+ Add an asset</button>
+      <h3>Debts you can deduct</h3>
+      <p class="hint">Only debts due within the next 12 months, or the next 12 months of payments on a mortgage or long-term loan (not the interest).</p>
+      <div id="liability-list"></div>
+      <button type="button" class="btn small" id="add-liability">+ Add a debt</button>
+
+      <details class="settings" id="settings">
+        <summary>Settings and scholarly choices</summary>
+        <div class="grid">
+          <label>Currency
+            <select id="set-currency">
+              <option value="GBP">£ GBP</option><option value="USD">$ USD</option><option value="EUR">€ EUR</option><option value="CAD">$ CAD</option><option value="AUD">$ AUD</option>
+            </select>
+          </label>
+          <label>Nisab based on
+            <select id="set-nisab">
+              <option value="silver">Silver, 612.36g (recommended by NZF: better for the poor)</option>
+              <option value="gold">Gold, 87.48g</option>
+            </select>
+          </label>
+          <label>Gold and silver jewellery you wear
+            <select id="set-jewellery">
+              <option value="include">Count it (Hanafi school, and the cautious view)</option>
+              <option value="exclude">Don't count it (Maliki, Shafi'i, Hanbali schools)</option>
+            </select>
+          </label>
+          <label>Debts
+            <select id="set-debts">
+              <option value="yes">Deduct debts due within 12 months (Hanafi, Hanbali, NZF)</option>
+              <option value="no">Don't deduct debts (Shafi'i view)</option>
+            </select>
+          </label>
+          <label>My zakah year is
+            <select id="set-year">
+              <option value="lunar">A lunar (Hijri) year: 2.5%</option>
+              <option value="solar">A solar year: 2.577%</option>
+            </select>
+          </label>
+          <label>Gold price per gram (<span class="cur-code">GBP</span>)
+            <input type="number" id="price-gold" min="0" step="0.01" inputmode="decimal">
+          </label>
+          <label>Silver price per gram (<span class="cur-code">GBP</span>)
+            <input type="number" id="price-silver" min="0" step="0.001" inputmode="decimal">
+          </label>
+        </div>
+        <p class="fineprint" id="price-source"></p>
+      </details>
+
+      <fieldset class="hawl">
+        <legend>Has your wealth been above the nisab for a full lunar year?</legend>
+        <p class="hint">Zakah is due once a year, on the anniversary of the day your wealth first reached the nisab. If you don't know the date, pick your best estimate (many people use Ramadan).</p>
+        <label><input type="radio" name="hawl" value="yes" checked> Yes</label>
+        <label><input type="radio" name="hawl" value="no"> No, not yet</label>
+        <label><input type="radio" name="hawl" value="unsure"> Not sure</label>
+      </fieldset>
+    </section>
+
+    <section class="card hidden result" id="result" aria-live="polite">
+      <h2 class="step"><span>3</span> Your zakah</h2>
+      <div class="total">
+        <p id="status-text"></p>
+        <p id="zakah-amount" class="amount"></p>
+        <p id="status-extra" class="hint"></p>
+      </div>
+      <table class="summary">
+        <tr><td>Zakatable assets</td><td id="sum-assets"></td></tr>
+        <tr><td>Deductible debts</td><td id="sum-debts"></td></tr>
+        <tr class="strong"><td>Net zakatable wealth</td><td id="sum-net"></td></tr>
+        <tr><td>Nisab threshold (<span id="nisab-metal">silver</span>)</td><td id="sum-nisab"></td></tr>
+      </table>
+      <div id="flags" class="callout warn hidden"></div>
+
+      <div class="donate" id="donate">
+        <h3>Give your zakah to families in Gaza</h3>
+        <p><span id="charity-name">Muslims in Need</span> (registered charity <span id="charity-number">1158317</span>) says its <span id="appeal-name">Gaza Emergency Appeal</span> is zakah-eligible, because the people it helps fall within the zakah categories. When you donate, choose <strong>Zakat</strong> as the donation type so it is kept separate and given only to eligible recipients.</p>
+        <a id="donate-link" class="btn donate-btn" href="#" target="_blank" rel="noopener">Give to the Gaza appeal</a>
+        <div id="goal" class="goal hidden"><div class="bar"><span></span></div><p></p></div>
+      </div>
+
+      <form id="email-form" class="email" novalidate>
+        <h3>Email me this breakdown</h3>
+        <p class="hint">Get a copy with every rule and source, to keep or check with your imam.</p>
+        <div class="grid two">
+          <label>First name (optional)<input type="text" id="first-name" autocomplete="given-name" maxlength="60"></label>
+          <label>Email<input type="email" id="email" autocomplete="email" required maxlength="200"></label>
+        </div>
+        <label class="hp" aria-hidden="true">Website<input type="text" id="website" tabindex="-1" autocomplete="off"></label>
+        <label class="check"><input type="checkbox" id="marketing">
+          <span>Yes, also send me Ramadan reminders and updates on the Gaza appeal from <span class="organiser">the organiser</span>. You can unsubscribe at any time.</span></label>
+        <div id="turnstile"></div>
+        <button type="submit" class="btn primary" id="email-btn">Email my breakdown</button>
+        <p id="email-status" class="status" role="status" aria-live="polite"></p>
+        <p class="fineprint">We use your email to send this breakdown. We only add you to the mailing list if you tick the box. We don't keep your financial details. See our <a href="privacy.html">privacy notice</a>.</p>
+      </form>
+
+      <details class="breakdown" open>
+        <summary>How each item was treated</summary>
+        <div id="breakdown"></div>
+      </details>
+    </section>
+
+    <section class="card notes">
+      <h2>About this calculator</h2>
+      <ul>
+        <li><strong>Rate:</strong> 2.5% of your net zakatable wealth, once it has stayed above the nisab for a lunar year.</li>
+        <li><strong>Nisab:</strong> the value of 87.48g of gold or 612.36g of silver, using today's prices. Silver gives a lower threshold, which is safer and better for the poor.</li>
+        <li><strong>Not zakatable:</strong> your home, car, furniture, clothes and other things for personal use; defined-benefit and state pensions.</li>
+        <li><strong>Where scholars differ</strong> (jewellery, debts, pensions, long-term shares, crypto), we show the mainstream view and tell you what we did. You can change these choices in the settings.</li>
+        <li><strong>Who can receive zakah:</strong> only the eight groups named in the Qur'an (9:60), such as the poor and those in need. Always give through a charity that keeps zakah separate.</li>
+      </ul>
+      <p class="disclaimer">This tool is a guide based on mainstream scholarly views, mostly following the <a href="https://nzf.org.uk/" target="_blank" rel="noopener">National Zakat Foundation (UK)</a>. It is not a fatwa. If your situation is complex, or you follow a particular madhab, please confirm with a qualified scholar.</p>
+      <p class="fineprint">This independent tool was made by a volunteer fundraiser. It is not run by Muslims in Need or the National Zakat Foundation.</p>
+    </section>
+  </main>
+
+  <footer class="wrap footer"><a href="privacy.html">Privacy</a></footer>
+
+  <template id="asset-tpl">
+    <div class="item">
+      <div class="item-main">
+        <select class="f-category" aria-label="Type of asset"></select>
+        <input class="f-description" type="text" placeholder="Description" aria-label="Description" maxlength="80">
+        <input class="f-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Value" aria-label="Value">
+        <button type="button" class="remove" aria-label="Remove">×</button>
+      </div>
+      <div class="item-detail"></div>
+      <p class="item-note"></p>
+    </div>
+  </template>
+  <template id="liability-tpl">
+    <div class="item">
+      <div class="item-main">
+        <select class="f-kind" aria-label="Type of debt"></select>
+        <input class="f-description" type="text" placeholder="Description" aria-label="Description" maxlength="80">
+        <input class="f-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Amount" aria-label="Amount">
+        <button type="button" class="remove" aria-label="Remove">×</button>
+      </div>
+      <p class="item-note"></p>
+    </div>
+  </template>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy notice · Zakah Assistant</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="config.js"></script>
+</head>
+<body>
+  <main class="wrap prose">
+    <div class="card">
+      <h1>Privacy notice</h1>
+      <p>This zakah assistant is run by <span class="organiser">the organiser</span>, a volunteer fundraiser for the Muslims in Need Gaza Emergency Appeal. It is an independent tool and is not run by Muslims in Need. The organiser is the data controller for the details below.</p>
+
+      <h2>What we collect and why</h2>
+      <ul>
+        <li><strong>Your description and figures.</strong> When you press "Work it out", the text you typed is sent to Anthropic (the AI service) only to turn it into the table on the page. It is not used to train AI models and we don't store it. Your figures stay in your browser unless you ask us to email them.</li>
+        <li><strong>Your email address and first name, to send your breakdown.</strong> We send one email with your breakdown, because you asked for it (lawful basis: to provide the service you requested). The email is sent through Brevo, our email provider. We don't store your financial figures after the email is sent.</li>
+        <li><strong>Your email address and first name, for Ramadan updates, only if you tick the box.</strong> We keep these on our mailing list at Brevo to send Ramadan reminders and updates on the Gaza appeal (lawful basis: your consent). Every email has an unsubscribe link, and you can withdraw consent at any time.</li>
+      </ul>
+
+      <h2>Who we share it with</h2>
+      <p>Anthropic (AI processing of your description), Brevo (sending email and holding the mailing list) and Netlify (website hosting). We never sell your details or share them with anyone else, including the charity, without your permission.</p>
+
+      <h2>How long we keep it</h2>
+      <p>Mailing list details are kept until you unsubscribe, or for two years after the last Ramadan campaign, whichever is sooner. Email delivery logs are kept by Brevo in line with its own policy.</p>
+
+      <h2>Your rights</h2>
+      <p>Under UK GDPR you can ask to see, correct or delete your details, or object to how they are used. Contact <a id="privacy-email" href="#">the organiser</a>. You can also complain to the Information Commissioner's Office at <a href="https://ico.org.uk/make-a-complaint/">ico.org.uk</a>.</p>
+      <p><a href="index.html">← Back to the calculator</a></p>
+    </div>
+  </main>
+  <script>
+    const c = window.ZAKAH_CONFIG || {};
+    document.querySelectorAll('.organiser').forEach((el) => { el.textContent = c.organiserName || 'the organiser'; });
+    const a = document.getElementById('privacy-email');
+    if (c.privacyEmail) { a.href = 'mailto:' + c.privacyEmail; a.textContent = c.privacyEmail; }
+  </script>
+</body>
+</html>
