@@ -87,8 +87,7 @@ items, settings `alreadyPaid` and `pensionView` (`nzf` or `on_access`).
 
 ## Hands photo
 
-Netlify runs `scripts/fetch-hands.mjs` at build time to download "Close up cupped hands" by
-Samantha Hurley from Burst by Shopify (free for commercial use, no attribution required) into
-`public/img/hands.jpg`. To use another photo you hold a licence for, commit it at
-`public/img/hands.jpg` and the script leaves it alone. Adjust `handsLanding` in `config.js` so the
-coin lands in the palms.
+`public/img/hands.jpg` is Pexels photo 7592365 by Varun Kumar Gaba (Pexels licence: free for
+commercial use, no attribution required), cropped to the hand. Source:
+https://www.pexels.com/photo/7592365/. `scripts/fetch-hands.mjs` only downloads a fallback
+photo if that file is ever missing. `handsLanding` in `config.js` is the coin's landing spot.
