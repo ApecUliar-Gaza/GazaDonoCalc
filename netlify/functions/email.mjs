@@ -9,6 +9,7 @@
 // Email provider: Brevo (https://www.brevo.com). Swap sendEmail/addToList to use another.
 import { calculate, formatMoney, STATUS_TEXT, CATEGORIES, LIABILITY_KINDS, SOURCES, DEFAULT_SETTINGS } from '../../public/js/zakat-engine.js';
 import { json, rateLimit, clientIp, escapeHtml } from '../lib/shared.mjs';
+import { fundraiserFrom } from '../../public/js/fundraiser.js';
 
 const BREVO = 'https://api.brevo.com/v3';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -46,16 +47,19 @@ export default async (req) => {
   }
 
   const result = calculate(sanitise(body));
+  // A personal link from another fundraiser: their donate page (validated), and never our list.
+  const custom = fundraiserFrom(body.fundraiser ?? {}, {});
+  const fundraiser = custom.custom ? custom : null;
 
   try {
-    await sendEmail({ email, firstName, result });
+    await sendEmail({ email, firstName, result, fundraiser });
   } catch (err) {
     console.error('send failed', err.message);
     return json({ error: 'We could not send the email. Please try again.' }, 502);
   }
 
   let subscribed = false;
-  if (body.marketingConsent === true) {
+  if (body.marketingConsent === true && !fundraiser) {
     try {
       await addToList({ email, firstName });
       subscribed = true;
@@ -114,8 +118,8 @@ async function brevo(path, payload) {
   }
 }
 
-async function sendEmail({ email, firstName, result }) {
-  const { html, text } = renderEmail({ firstName, result });
+async function sendEmail({ email, firstName, result, fundraiser }) {
+  const { html, text } = renderEmail({ firstName, result, fundraiser });
   await brevo('/smtp/email', {
     sender: { email: process.env.SENDER_EMAIL, name: process.env.SENDER_NAME || 'Zakah Assistant' },
     to: [{ email, ...(firstName ? { name: firstName } : {}) }],
@@ -157,12 +161,12 @@ async function turnstileOk(token, ip) {
   }
 }
 
-export function renderEmail({ firstName, result }) {
+export function renderEmail({ firstName, result, fundraiser = null }) {
   const cur = result.settings.currency;
   const m = (v) => formatMoney(v, cur);
-  const fundraiserUrl = process.env.FUNDRAISER_URL || '';
+  const fundraiserUrl = fundraiser?.url || process.env.FUNDRAISER_URL || '';
   const siteUrl = process.env.SITE_URL || process.env.URL || '';
-  const organiser = process.env.ORGANISER_NAME || '';
+  const organiser = fundraiser ? fundraiser.name || '' : process.env.ORGANISER_NAME || '';
   const greeting = firstName ? `Assalamu alaykum ${escapeHtml(firstName)},` : 'Assalamu alaykum,';
 
   const assetRows = result.assets
@@ -180,14 +184,18 @@ export function renderEmail({ firstName, result }) {
   const settingsLine = `Nisab: ${s.nisabMetal} (${result.nisabGrams}g = ${m(result.nisab ?? 0)}). Jewellery: ${s.jewellery === 'include' ? 'included (Hanafi view)' : 'worn jewellery exempt (Maliki, Shafi\'i, Hanbali view)'}. Debts: ${s.deductDebts ? 'deducted' : 'not deducted'}. Rate: ${(result.rate * 100).toFixed(3).replace(/0+$/, '')}% (${s.yearType} year). Prices used: gold ${m(result.prices.goldPerGram)}/g, silver ${m(result.prices.silverPerGram)}/g.`;
 
   const zakahConfirmed = process.env.FUNDRAISER_ZAKAH_CONFIRMED === 'true';
-  const donateText = zakahConfirmed
+  const ctaTitle = fundraiser ? (fundraiser.cause ? `Support ${escapeHtml(fundraiser.cause)}` : 'Support this fundraiser') : 'Support orphans in Gaza';
+  const ctaButton = fundraiser ? (organiser ? `Give with ${escapeHtml(organiser)}` : 'Go to the fundraiser') : `Give to Gaza orphans${organiser ? ` with ${escapeHtml(organiser)}` : ''}`;
+  const donateText = fundraiser
+    ? `This calculator was shared by ${escapeHtml(organiser || 'a fundraiser')}${fundraiser.cause ? `, who is raising money for ${escapeHtml(fundraiser.cause)}` : ''}. <strong>If you are giving zakah</strong>, check on the donation page that the charity accepts zakah and keeps it separate, or give as sadaqah.`
+    : zakahConfirmed
     ? 'This fundraiser sends every gift to Muslims in Need (charity no. 1158317) to support orphans in Gaza, and it accepts zakah. Please make sure your gift is marked as <strong>Zakat</strong> so it is kept separate.'
     : 'This fundraiser sends every gift to Muslims in Need (charity no. 1158317) to support orphans in Gaza. Orphans who are poor are among the people zakah can be given to, but the page does not yet say whether gifts are kept separate as zakah. <strong>If you are giving zakah</strong>, please confirm with Muslims in Need first, or give it here as sadaqah.';
   const cta = fundraiserUrl
     ? `<div style="background:#0f5132;color:#fff;padding:18px;border-radius:10px;margin:20px 0">
-        <p style="margin:0 0 8px;font-size:18px"><strong>Support orphans in Gaza</strong></p>
+        <p style="margin:0 0 8px;font-size:18px"><strong>${ctaTitle}</strong></p>
         <p style="margin:0 0 12px">${donateText}</p>
-        <a href="${escapeHtml(fundraiserUrl)}" style="display:inline-block;background:#fff;color:#0f5132;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold">Give to Gaza orphans${organiser ? ` with ${escapeHtml(organiser)}` : ''}</a>
+        <a href="${escapeHtml(fundraiserUrl)}" style="display:inline-block;background:#fff;color:#0f5132;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold">${ctaButton}</a>
       </div>`
     : '';
 
@@ -228,7 +236,7 @@ export function renderEmail({ firstName, result }) {
     `Net zakatable wealth: ${m(result.netZakatable)}. Nisab: ${m(result.nisab ?? 0)}.`,
     settingsLine,
     '',
-    fundraiserUrl ? `Support orphans in Gaza through Muslims in Need: ${fundraiserUrl}${zakahConfirmed ? ' (mark your gift as Zakat)' : ' (if giving zakah, please confirm with Muslims in Need first, or give as sadaqah)'}` : '',
+    fundraiser ? `Support ${fundraiser.cause || 'the fundraiser'}: ${fundraiserUrl} (if giving zakah, check the charity accepts it, or give as sadaqah)` : fundraiserUrl ? `Support orphans in Gaza through Muslims in Need: ${fundraiserUrl}${zakahConfirmed ? ' (mark your gift as Zakat)' : ' (if giving zakah, please confirm with Muslims in Need first, or give as sadaqah)'}` : '',
     '',
     'This is a guide based on mainstream scholarly views (mostly NZF UK guidance), not a fatwa. Please confirm complex cases with a qualified scholar.',
   ].join('\n');

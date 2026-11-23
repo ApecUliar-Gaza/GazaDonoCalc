@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Make your own link · Zakah Assistant</title>
+  <meta name="description" content="Fundraising this Ramadan? Get your own zakah calculator link with your donate button.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌙</text></svg>">
+  <script src="js/vendor/qrcode-generator-1.4.4.js"></script>
+</head>
+<body>
+  <header class="hero" style="padding-bottom:84px">
+    <div class="hero-pattern" aria-hidden="true"></div>
+    <div class="wrap hero-inner">
+      <p class="eyebrow"><span class="moon" aria-hidden="true">☾</span> For fundraisers</p>
+      <h1>Share the zakah calculator with your donate button</h1>
+      <p class="lead">People work out their zakah, then see a button to give to your fundraiser. It takes a minute to set up and it's free.</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <form class="card" id="maker" novalidate>
+      <h2 class="step"><span>1</span> Your fundraiser</h2>
+      <div class="grid" style="margin-top:0">
+        <label style="grid-column:1/-1">Link to your donation page
+          <input type="url" id="f" required placeholder="https://www.launchgood.com/v4/campaign/..." inputmode="url">
+        </label>
+        <label>Your name (shown on the button)
+          <input type="text" id="n" maxlength="40" placeholder="e.g. Aisha">
+        </label>
+        <label>What you're raising for (optional)
+          <input type="text" id="t" maxlength="60" placeholder="e.g. orphans in Gaza">
+        </label>
+      </div>
+      <p class="fineprint">Works with LaunchGood, JustGiving, GoFundMe, Givebutter, Enthuse, Donorbox, Virgin Money Giving and Muslims in Need pages.</p>
+      <p id="err" class="status" style="color:#b02a37"></p>
+      <button class="btn primary big" type="submit">Make my link <span aria-hidden="true">→</span></button>
+    </form>
+
+    <section class="card hidden" id="out">
+      <h2 class="step"><span>2</span> Share it</h2>
+
+      <div class="option">
+        <h3>Your personal link <span class="tag">Everyone</span></h3>
+        <p class="hint">Share on WhatsApp, Instagram bio, email or in your mosque group. The calculator opens with your donate button.</p>
+        <div class="share-grid">
+          <div>
+            <div class="copy-row"><input type="text" id="link" readonly><button type="button" class="btn primary" data-copy="link">Copy</button></div>
+            <div class="row-actions" style="margin-top:10px">
+              <a class="btn small" id="wa" target="_blank" rel="noopener">Share on WhatsApp</a>
+              <a class="btn small" id="open" target="_blank" rel="noopener">Open it</a>
+            </div>
+          </div>
+          <div><div id="qr"></div><p class="fineprint">QR code for posters and stalls. Right-click or long-press to save.</p></div>
+        </div>
+      </div>
+
+      <div class="option">
+        <h3>On your LaunchGood or JustGiving page <span class="tag">Image + link</span></h3>
+        <p class="hint">These pages don't allow embedded tools, but you can add an image and a link to your story:</p>
+        <ol class="hint" style="padding-left:20px">
+          <li>Save this image (right-click or long-press, then "Save image").</li>
+          <li>Edit your campaign story. Add the image with <strong>Insert Image</strong>.</li>
+          <li>Under it, add a line like the one below and turn "zakah calculator" into a link to your personal link.</li>
+        </ol>
+        <img class="banner-preview" src="img/zakah-banner.png" alt="Work out your zakah in your own words: free zakah calculator" width="1200" height="628">
+        <div class="copy-row"><input type="text" id="story-line" readonly><button type="button" class="btn primary" data-copy="story-line">Copy</button></div>
+      </div>
+
+      <div class="option">
+        <h3>On your own website <span class="tag">Embed</span></h3>
+        <p class="hint">For WordPress, Wix, Squarespace or any site that lets you add an HTML or "embed code" block. Paste this in:</p>
+        <div class="copy-row"><textarea id="embed" readonly></textarea><button type="button" class="btn primary" data-copy="embed">Copy</button></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Good to know</h2>
+      <ul class="hint" style="padding-left:20px">
+        <li>The calculator follows mainstream scholarly guidance (mostly the National Zakat Foundation, UK) and asks people to check complex cases with a scholar.</li>
+        <li>Your page tells people giving zakah to check that your charity accepts and ring-fences zakah, or to give as sadaqah. Please make sure your charity offers a zakah option.</li>
+        <li>Nothing is collected for you: your link doesn't add anyone to a mailing list.</li>
+      </ul>
+      <p><a href="index.html">← Back to the calculator</a></p>
+    </section>
+  </main>
+  <footer class="wrap footer"><p><a href="privacy.html">Privacy</a></p></footer>
+
+  <script type="module">
+    import { safeFundraiserUrl, cleanText, buildLink } from './js/fundraiser.js';
+    const $ = (s) => document.querySelector(s);
+    const site = new URL('./', location.href).toString();
+
+    $('#maker').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const url = safeFundraiserUrl($('#f').value);
+      if (!url) {
+        $('#err').textContent = 'Please paste the full https:// link to your page on one of the sites listed.';
+        return;
+      }
+      $('#err').textContent = '';
+      const name = cleanText($('#n').value);
+      const cause = cleanText($('#t').value, 60);
+      const link = buildLink(site, { url, name, cause });
+      $('#link').value = link;
+      $('#open').href = link;
+      const msg = `Ramadan is coming. Work out your zakah in a minute by describing your savings in your own words, then ${cause ? `support ${cause}` : 'support my fundraiser'}: ${link}`;
+      $('#wa').href = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+      $('#story-line').value = `Not sure how much zakah you owe? Use this free zakah calculator: ${link}`;
+      const embedSrc = buildLink(site, { url, name, cause }) + '&embed=1';
+      $('#embed').value = `<iframe src="${embedSrc}" title="Zakah calculator" style="width:100%;border:0;min-height:900px" loading="lazy"></iframe>
+<script>addEventListener("message",function(e){if(e.origin==="${new URL(site).origin}"&&e.data&&e.data.type==="zakah-assistant:height"){document.querySelectorAll('iframe[src^="${new URL(site).origin}"]').forEach(function(f){f.style.height=e.data.height+"px"})}});<\/script>`;
+      $('#qr').innerHTML = '';
+      if (window.qrcode) {
+        const qr = window.qrcode(0, 'M');
+        qr.addData(link);
+        qr.make();
+        const img = new Image();
+        img.src = qr.createDataURL(8, 2);
+        img.alt = 'QR code for your link';
+        $('#qr').appendChild(img);
+      }
+      $('#out').classList.remove('hidden');
+      $('#out').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    document.querySelectorAll('[data-copy]').forEach((btn) => btn.addEventListener('click', async () => {
+      const el = document.getElementById(btn.dataset.copy);
+      try { await navigator.clipboard.writeText(el.value); } catch { el.select(); document.execCommand('copy'); }
+      const old = btn.textContent; btn.textContent = 'Copied'; setTimeout(() => { btn.textContent = old; }, 1500);
+    }));
+  </script>
+</body>
+</html>

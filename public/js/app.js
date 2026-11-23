@@ -1,8 +1,13 @@
 import {
   calculate, CATEGORIES, LIABILITY_KINDS, OPTIONS, KARAT_PURITY, SOURCES, STATUS_TEXT, DEFAULT_SETTINGS, formatMoney,
 } from './zakat-engine.js';
+import { fundraiserFrom } from './fundraiser.js';
 
 const cfg = window.ZAKAH_CONFIG || {};
+const params = new URLSearchParams(location.search);
+const fundraiser = fundraiserFrom(params, cfg);
+const embedded = params.get('embed') === '1';
+if (embedded) document.body.classList.add('embed');
 const $ = (sel, root = document) => root.querySelector(sel);
 
 const state = {
@@ -99,6 +104,7 @@ function showQuestions(questions = [], ignored = []) {
 function showReview() {
   $('#review').classList.remove('hidden');
   $('#result').classList.remove('hidden');
+  setupSticky();
   render();
   $('#review').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -107,6 +113,17 @@ const blankAsset = () => ({ id: nextId++, category: 'cash', description: '', amo
 const blankLiability = () => ({ id: nextId++, kind: 'due_within_12_months', description: '', amount: null });
 $('#add-asset').addEventListener('click', () => { state.assets.push(blankAsset()); render(); });
 $('#add-liability').addEventListener('click', () => { state.liabilities.push(blankLiability()); render(); });
+
+// Floating total while the result card is off screen.
+let stickyReady = false;
+function setupSticky() {
+  if (stickyReady || embedded) return;
+  stickyReady = true;
+  const bar = $('#sticky-total');
+  new IntersectionObserver(([entry]) => {
+    bar.classList.toggle('hidden', entry.isIntersecting || entry.boundingClientRect.top < 0);
+  }).observe($('#result .total'));
+}
 
 // ---------- settings ----------
 const bindSetting = (sel, key, map = (v) => v) => $(sel).addEventListener('change', (e) => {
@@ -165,7 +182,7 @@ function renderLists(result) {
     amount.value = a.amount ?? '';
     if ((a.category === 'gold' || a.category === 'silver') && Number(a.grams) > 0) {
       amount.value = '';
-      amount.placeholder = `${formatMoney(row.result.value, state.settings.currency)} (from grams)`;
+      amount.placeholder = `${row.result.value.toLocaleString("en-GB", { maximumFractionDigits: 0 })} from grams`;
       amount.disabled = true;
     }
     $('.item-detail', node).innerHTML = detailFields(a);
@@ -209,6 +226,10 @@ function render(rebuildLists = true) {
   if (rebuildLists) renderLists(result);
 
   $('#status-text').textContent = STATUS_TEXT[result.status];
+  $('#result').dataset.status = result.status;
+  $('#sticky-amount').textContent = result.status === 'missing_prices' ? '–' : m(result.zakahDue);
+  const sym = { GBP: '£', USD: '$', EUR: '€', CAD: '$', AUD: '$' }[state.settings.currency] || '';
+  document.querySelectorAll('.cur-symbol').forEach((el) => { el.textContent = sym; });
   $('#zakah-amount').textContent = result.status === 'missing_prices' ? '–' : m(result.zakahDue);
   let extra = '';
   if (result.status === 'hawl_not_complete') extra = `When a full lunar year has passed with your wealth above the nisab, your zakah would be about ${m(result.zakahIfDue)}.`;
@@ -234,13 +255,27 @@ function render(rebuildLists = true) {
 
 // ---------- donate ----------
 function setupDonate() {
+  const link = $('#donate-link');
+  const marketing = $('#marketing').closest('label');
+  if (fundraiser.custom) {
+    // Someone else's personal link: their donate page, generic wording, no mailing list.
+    const who = fundraiser.name ? esc(fundraiser.name) : 'this fundraiser';
+    const cause = fundraiser.cause ? esc(fundraiser.cause) : null;
+    $('#hosted-by').textContent = `Shared by ${fundraiser.name || 'a fundraiser'}${fundraiser.cause ? ` for ${fundraiser.cause}` : ''}`;
+    $('#hosted-by').classList.remove('hidden');
+    $('#donate-title').textContent = fundraiser.cause ? `Support ${fundraiser.cause}` : `Support ${fundraiser.name ? `${fundraiser.name}'s` : 'this'} fundraiser`;
+    $('#donate-text').innerHTML = `This calculator was shared by ${who}${cause ? `, who is raising money for ${cause}` : ''}. <strong>If you are giving zakah</strong>, check on the donation page that the charity accepts zakah and keeps it separate, or give your gift as sadaqah.`;
+    link.href = fundraiser.url;
+    link.textContent = fundraiser.name ? `Give with ${fundraiser.name}` : 'Go to the fundraiser';
+    marketing.remove();
+    return;
+  }
   const charity = `${esc(cfg.charityName || 'Muslims in Need')} (registered charity ${esc(cfg.charityNumber || '1158317')})`;
   $('#donate-text').innerHTML = cfg.zakahConfirmed
     ? `This fundraiser sends every gift to ${charity} to support orphans in Gaza, and it accepts zakah. Orphans in need are among the people zakah can be given to. When you donate, make sure your gift is marked as <strong>Zakat</strong> so it is kept separate.`
     : `This fundraiser sends every gift to ${charity} to support orphans in Gaza. Orphans who are poor are among the people zakah can be given to, but the fundraiser page doesn't yet say whether gifts are kept separate as zakah. <strong>If you are giving zakah</strong>, please confirm with ${esc(cfg.charityName || 'Muslims in Need')} first, or give it as sadaqah here.`;
   document.querySelectorAll('.organiser').forEach((el) => { el.textContent = cfg.organiserName || 'the organiser'; });
-  const link = $('#donate-link');
-  if (!cfg.fundraiserUrl) { $('#donate').classList.add('hidden'); return; }
+  if (!cfg.fundraiserUrl) { $('#donate').classList.add('hidden'); marketing.remove(); return; }
   link.href = cfg.fundraiserUrl;
   link.textContent = cfg.organiserName ? `Give to Gaza orphans with ${cfg.organiserName}` : 'Give to Gaza orphans';
   if (cfg.fundraiserGoal && cfg.fundraiserRaised != null) {
@@ -249,6 +284,14 @@ function setupDonate() {
     $('#goal p').textContent = `${formatMoney(cfg.fundraiserRaised, 'GBP').replace('.00', '')} raised of ${formatMoney(cfg.fundraiserGoal, 'GBP').replace('.00', '')}`;
     $('#goal').classList.remove('hidden');
   }
+}
+
+// In an iframe, tell the host page our height so it can size the frame (see share.html).
+function setupEmbed() {
+  if (!embedded || window.parent === window) return;
+  const send = () => window.parent.postMessage({ type: 'zakah-assistant:height', height: document.documentElement.scrollHeight }, '*');
+  new ResizeObserver(send).observe(document.body);
+  send();
 }
 
 // ---------- email ----------
@@ -277,7 +320,8 @@ $('#email-form').addEventListener('submit', async (e) => {
         email,
         firstName: $('#first-name').value.trim(),
         website: $('#website').value,
-        marketingConsent: $('#marketing').checked,
+        marketingConsent: !!$('#marketing')?.checked,
+        fundraiser: fundraiser.custom ? { f: fundraiser.url, n: fundraiser.name, t: fundraiser.cause } : null,
         turnstileToken: state.turnstileToken,
         assets: state.assets,
         liabilities: state.liabilities,
@@ -302,5 +346,6 @@ function esc(s) {
 }
 
 setupDonate();
+setupEmbed();
 setupTurnstile();
 loadPrices();

@@ -4,49 +4,73 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Zakah Assistant: work out your zakah in plain words</title>
-  <meta name="description" content="Describe your savings, gold, shares and pension in your own words. Get a clear zakah breakdown based on mainstream scholarly guidance, and give to families in Gaza.">
+  <meta name="description" content="Describe your savings, gold, shares and pension in your own words. Get a clear zakah breakdown based on mainstream scholarly guidance, and support orphans in Gaza.">
   <meta property="og:title" content="Zakah Assistant: work out your zakah in plain words">
-  <meta property="og:description" content="Type “£5k savings, some gold and a pension” and get your zakah breakdown in seconds.">
+  <meta property="og:description" content="Type “£5k savings, some gold and a pension” and get your zakah breakdown in a minute.">
+  <meta property="og:image" content="img/zakah-banner.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0b3d2a">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="styles.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌙</text></svg>">
   <script src="config.js"></script>
 </head>
 <body>
   <header class="hero">
-    <div class="wrap">
-      <p class="eyebrow">Ramadan zakah, made simple</p>
-      <h1>Work out your zakah by describing your wealth in your own words</h1>
-      <p class="lead">Tell us what you have, like you would tell a friend. We turn it into a clear breakdown using mainstream scholarly guidance, and show every rule we used.</p>
+    <div class="hero-pattern" aria-hidden="true"></div>
+    <div class="wrap hero-inner">
+      <p class="eyebrow"><span class="moon" aria-hidden="true">☾</span> Ramadan zakah, made simple</p>
+      <h1>Work out your zakah in your own words</h1>
+      <p class="lead">Tell us what you have, like you'd tell a friend. We turn it into a clear breakdown using mainstream scholarly guidance, and show every rule we used.</p>
+      <ul class="trust">
+        <li>Based on National Zakat Foundation guidance</li>
+        <li>Free, and we don't store your figures</li>
+        <li>Takes about a minute</li>
+      </ul>
+      <p class="hosted-by hidden" id="hosted-by"></p>
     </div>
   </header>
 
   <main class="wrap">
-    <section class="card" id="describe">
+    <section class="card describe" id="describe">
       <label for="wealth-text" class="step"><span>1</span> Describe your savings and assets</label>
       <textarea id="wealth-text" rows="4" maxlength="1500" placeholder="e.g. I have £5k in savings, £1,200 in my current account, about 30g of 22ct gold jewellery I wear, a workplace pension worth £40k, and £1,500 left on my credit card."></textarea>
       <div class="chips" aria-label="Examples">
+        <span class="chips-label">Try an example:</span>
         <button type="button" class="chip" data-example="£5k savings, some gold jewellery I wear (about 40g, 22 carat) and a workplace pension of £28,000">Savings, gold and a pension</button>
         <button type="button" class="chip" data-example="£12,000 in a cash ISA, £8,000 of shares in a stocks and shares ISA that I hold long term, £600 of bitcoin, and I owe £2,000 on my credit card">ISAs, shares and crypto</button>
         <button type="button" class="chip" data-example="I run a small online shop: £6,000 of stock at sale price, £3,500 in the business account, customers owe me £900. Personally £2k savings and a £180k mortgage on my home, paying £950 a month.">Small business</button>
       </div>
       <div class="row-actions">
-        <button type="button" id="parse-btn" class="btn primary">Work it out</button>
+        <button type="button" id="parse-btn" class="btn primary big">Work it out <span aria-hidden="true">→</span></button>
         <button type="button" id="manual-btn" class="btn link">Or enter items myself</button>
       </div>
       <p id="parse-status" class="status" role="status" aria-live="polite"></p>
-      <p class="fineprint">What you type is sent to an AI service only to read it into the table below. We don't store it.</p>
+      <p class="fineprint">What you type is sent to an AI service only to read it into the list below. We don't store it.</p>
     </section>
 
     <section class="card hidden" id="review">
       <h2 class="step"><span>2</span> Check what we understood</h2>
       <div id="questions" class="callout hidden"></div>
-      <h3>Assets</h3>
+      <h3 class="section-label">Assets</h3>
       <div id="asset-list"></div>
       <button type="button" class="btn small" id="add-asset">+ Add an asset</button>
-      <h3>Debts you can deduct</h3>
+      <h3 class="section-label">Debts you can deduct</h3>
       <p class="hint">Only debts due within the next 12 months, or the next 12 months of payments on a mortgage or long-term loan (not the interest).</p>
       <div id="liability-list"></div>
       <button type="button" class="btn small" id="add-liability">+ Add a debt</button>
+
+      <fieldset class="hawl">
+        <legend>Has your wealth been above the nisab for a full lunar year?</legend>
+        <p class="hint">Zakah is due once a year, on the anniversary of the day your wealth first reached the nisab. If you don't know the date, pick your best estimate (many people use Ramadan). Money you received during the year is added in on that date and doesn't need a year of its own (the Hanafi view, followed by NZF), so answer about your wealth as a whole.</p>
+        <div class="segmented" role="radiogroup">
+          <label><input type="radio" name="hawl" value="yes" checked><span>Yes</span></label>
+          <label><input type="radio" name="hawl" value="no"><span>Not yet</span></label>
+          <label><input type="radio" name="hawl" value="unsure"><span>Not sure</span></label>
+        </div>
+      </fieldset>
 
       <details class="settings" id="settings">
         <summary>Settings and scholarly choices</summary>
@@ -89,14 +113,6 @@
         </div>
         <p class="fineprint" id="price-source"></p>
       </details>
-
-      <fieldset class="hawl">
-        <legend>Has your wealth been above the nisab for a full lunar year?</legend>
-        <p class="hint">Zakah is due once a year, on the anniversary of the day your wealth first reached the nisab. If you don't know the date, pick your best estimate (many people use Ramadan). Money you received during the year is added in on that date and doesn't need a year of its own (the Hanafi view, followed by NZF), so answer about your wealth as a whole.</p>
-        <label><input type="radio" name="hawl" value="yes" checked> Yes</label>
-        <label><input type="radio" name="hawl" value="no"> No, not yet</label>
-        <label><input type="radio" name="hawl" value="unsure"> Not sure</label>
-      </fieldset>
     </section>
 
     <section class="card hidden result" id="result" aria-live="polite">
@@ -115,7 +131,8 @@
       <div id="flags" class="callout warn hidden"></div>
 
       <div class="donate" id="donate">
-        <h3>Support orphans in Gaza</h3>
+        <div class="donate-pattern" aria-hidden="true"></div>
+        <h3 id="donate-title">Support orphans in Gaza</h3>
         <p id="donate-text"></p>
         <a id="donate-link" class="btn donate-btn" href="#" target="_blank" rel="noopener">Give to Gaza orphans</a>
         <div id="goal" class="goal hidden"><div class="bar"><span></span></div><p></p></div>
@@ -130,41 +147,55 @@
         </div>
         <label class="hp" aria-hidden="true">Website<input type="text" id="website" tabindex="-1" autocomplete="off"></label>
         <label class="check"><input type="checkbox" id="marketing">
-          <span>Yes, also send me Ramadan reminders and updates on the Gaza orphans fundraiser from <span class="organiser">the organiser</span>. You can unsubscribe at any time.</span></label>
+          <span>Yes, also send me Ramadan reminders and updates on <span class="campaign-label">the Gaza orphans fundraiser</span> from <span class="organiser">the organiser</span>. You can unsubscribe at any time.</span></label>
         <div id="turnstile"></div>
         <button type="submit" class="btn primary" id="email-btn">Email my breakdown</button>
         <p id="email-status" class="status" role="status" aria-live="polite"></p>
-        <p class="fineprint">We use your email to send this breakdown. We only add you to the mailing list if you tick the box. We don't keep your financial details. See our <a href="privacy.html">privacy notice</a>.</p>
+        <p class="fineprint">We use your email to send this breakdown. We only add you to the mailing list if you tick the box. We don't keep your financial details. See our <a href="privacy.html" target="_top">privacy notice</a>.</p>
       </form>
 
-      <details class="breakdown" open>
-        <summary>How each item was treated</summary>
+      <details class="breakdown">
+        <summary>How each item was treated, with sources</summary>
         <div id="breakdown"></div>
       </details>
     </section>
 
-    <section class="card notes">
+    <section class="card notes" id="about">
       <h2>About this calculator</h2>
-      <ul>
-        <li><strong>Rate:</strong> 2.5% of your net zakatable wealth, once it has stayed above the nisab for a lunar year.</li>
-        <li><strong>Nisab:</strong> the value of 87.48g of gold or 612.36g of silver, using today's prices. Silver gives a lower threshold, which is safer and better for the poor.</li>
-        <li><strong>Not zakatable:</strong> your home, car, furniture, clothes and other things for personal use; defined-benefit and state pensions.</li>
-        <li><strong>Where scholars differ</strong> (jewellery, debts, pensions, long-term shares, crypto), we show the mainstream view and tell you what we did. You can change these choices in the settings.</li>
-        <li><strong>Who can receive zakah:</strong> only the eight groups named in the Qur'an (9:60), such as the poor and those in need. Always give through a charity that keeps zakah separate.</li>
-      </ul>
+      <div class="facts">
+        <div><strong>2.5%</strong><span>of your net zakatable wealth, once it has stayed above the nisab for a lunar year.</span></div>
+        <div><strong>Nisab</strong><span>the value of 87.48g of gold or 612.36g of silver at today's prices. Silver gives a lower threshold, which is safer and better for the poor.</span></div>
+        <div><strong>Not counted</strong><span>your home, car, furniture, clothes and personal items; defined-benefit and state pensions.</span></div>
+        <div><strong>Who receives it</strong><span>only the eight groups named in the Qur'an (9:60), such as the poor and those in need. Give through a charity that keeps zakah separate.</span></div>
+      </div>
+      <p class="hint">Where scholars differ (jewellery, debts, pensions, long-term shares, crypto), we show the mainstream view, say what we did, and let you change it in the settings.</p>
       <p class="disclaimer">This tool is a guide based on mainstream scholarly views, mostly following the <a href="https://nzf.org.uk/" target="_blank" rel="noopener">National Zakat Foundation (UK)</a>. It is not a fatwa. If your situation is complex, or you follow a particular madhab, please confirm with a qualified scholar.</p>
-      <p class="fineprint">This independent tool was made by a volunteer fundraiser. It is not run by Muslims in Need or the National Zakat Foundation.</p>
+    </section>
+
+    <section class="card fundraise-cta" id="own-link">
+      <div>
+        <h2>Fundraising this Ramadan?</h2>
+        <p>Get your own copy of this calculator with your fundraiser's donate button, to share on WhatsApp, Instagram or your own website.</p>
+      </div>
+      <a class="btn primary" href="share.html" target="_top">Make my link</a>
     </section>
   </main>
 
-  <footer class="wrap footer"><a href="privacy.html">Privacy</a></footer>
+  <footer class="wrap footer">
+    <p>An independent tool made by a volunteer fundraiser. Not run by Muslims in Need or the National Zakat Foundation.</p>
+    <p><a href="privacy.html" target="_top">Privacy</a> · <a href="share.html" target="_top">Make your own link</a></p>
+  </footer>
+
+  <div class="sticky-total hidden" id="sticky-total" aria-hidden="true">
+    <span>Your zakah</span><strong id="sticky-amount">£0.00</strong><a href="#result">See breakdown</a>
+  </div>
 
   <template id="asset-tpl">
     <div class="item">
       <div class="item-main">
         <select class="f-category" aria-label="Type of asset"></select>
         <input class="f-description" type="text" placeholder="Description" aria-label="Description" maxlength="80">
-        <input class="f-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Value" aria-label="Value">
+        <div class="money"><span class="cur-symbol">£</span><input class="f-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Value" aria-label="Value"></div>
         <button type="button" class="remove" aria-label="Remove">×</button>
       </div>
       <div class="item-detail"></div>
@@ -176,7 +207,7 @@
       <div class="item-main">
         <select class="f-kind" aria-label="Type of debt"></select>
         <input class="f-description" type="text" placeholder="Description" aria-label="Description" maxlength="80">
-        <input class="f-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Amount" aria-label="Amount">
+        <div class="money"><span class="cur-symbol">£</span><input class="f-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Amount" aria-label="Amount"></div>
         <button type="button" class="remove" aria-label="Remove">×</button>
       </div>
       <p class="item-note"></p>
