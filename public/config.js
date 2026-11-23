@@ -25,5 +25,5 @@ window.ZAKAH_CONFIG = {
   // free for commercial use, no credit required). Saved at public/img/hands.jpg, cropped.
   // handsLanding is where coins land, as % across and down the photo.
   handsImage: 'img/hands.jpg',
-  handsLanding: { x: 43, y: 57 },
+  handsLanding: { x: 43, y: 52 },
 };

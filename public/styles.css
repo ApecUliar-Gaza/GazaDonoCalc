@@ -454,3 +454,23 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 .topbar #top-donate { background: var(--red); color: #fff; border: 0; box-shadow: 0 6px 18px -6px rgba(214, 40, 57, .7); }
 .topbar #top-donate:hover { background: var(--red-dark); }
 @media (max-width: 520px) { .topbar #top-donate { font-size: .85rem; padding: 8px 12px; margin-right: 44px; } .hero { padding-bottom: 64px; } }
+
+/* ---------- real coin photo (Pexels 1350463 by Hasan Albari) ---------- */
+.coin-face { background: url("img/coin.webp") center / cover no-repeat, #8a6a45; box-shadow: inset 0 -3px 6px rgba(40, 25, 10, .35); filter: brightness(1.25) saturate(1.1); }
+.coin-edge { background: repeating-conic-gradient(#5e4026 0 4deg, #9c774c 4deg 8deg); box-shadow: 0 0 0 1px #3f2a17; }
+.page-coin .coin { left: -27px; top: -27px; width: 54px; height: 54px; }
+
+/* ---------- final scene: hand on the right, higher up ---------- */
+.giving-scene { padding-top: 24px; }
+.giving-scene .scroll-hint { text-align: right; }
+.scene-giving.photo { width: min(560px, 88vw); margin: -10px 0 -40px auto; }
+@media (min-width: 900px) {
+  .giving-scene .scene-inner { max-width: 1080px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 32px; align-items: start; }
+  .giving-scene .scene-inner > * { grid-column: 1; }
+  .giving-scene .scroll-hint { grid-column: 1; text-align: left; margin-top: 70px; }
+  .scene-giving.photo { grid-column: 2; grid-row: 1 / span 6; width: 100%; margin: -20px 0 0; }
+  .giving-scene .scene-message { margin-top: 0; }
+  .giving-scene .scene-message, .giving-scene .scene-title, .giving-scene .scene-note { text-align: left; margin-left: 0; }
+  .giving-scene #scene-donate { justify-self: start; }
+}
+@media (max-width: 899px) { .giving-scene { padding-top: 8px; } .giving-scene .scroll-hint { display: none; } .scene-giving.photo { margin-top: -20px; margin-right: -16px; } }

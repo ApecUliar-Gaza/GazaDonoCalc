@@ -66,10 +66,7 @@ const HOLLOW_SVG = `
 const COIN_HTML = `
 <div class="coin-body">
   <div class="coin-edge"></div>
-  <div class="coin-face">
-    <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false"><g fill="none" stroke="rgba(110,74,6,.55)" stroke-width="1.1">
-      <circle cx="20" cy="20" r="14.5"/><path d="M20 10.5 l2.8 6.7 6.7 2.8 -6.7 2.8 -2.8 6.7 -2.8 -6.7 -6.7 -2.8 6.7 -2.8z" fill="rgba(140,98,10,.35)"/></g></svg>
-  </div>
+  <div class="coin-face"></div>
   <div class="coin-shine"></div>
 </div>`;
 
@@ -347,7 +344,11 @@ export function pageCoinScene({ scene, stage, messageEl, contentWidth = 780 } = 
 
     // As the hands come into view, steer the coin into them.
     const p = pileEl().getBoundingClientRect();
-    const t = Math.min(Math.max((vh - p.top) / (vh * 0.55), 0), 1);
+    // It lands when the hands reach 45% down the screen, or at the bottom of the page if they
+    // can't scroll that high.
+    const pileTopAtEnd = p.top - (max - window.scrollY);
+    const landY = Math.max(vh * 0.45, pileTopAtEnd + 8);
+    const t = Math.min(Math.max((vh - p.top) / Math.max(vh - landY, 1), 0), 1);
     const e = t * t * (3 - 2 * t);
     const x = trackX + (p.left - trackX) * e;
     const y = trackY + (p.top - trackY) * e;

@@ -90,4 +90,5 @@ items, settings `alreadyPaid` and `pensionView` (`nzf` or `on_access`).
 `public/img/hands.jpg` is Pexels photo 7592365 by Varun Kumar Gaba (Pexels licence: free for
 commercial use, no attribution required), cropped to the hand. Source:
 https://www.pexels.com/photo/7592365/. `scripts/fetch-hands.mjs` only downloads a fallback
-photo if that file is ever missing. `handsLanding` in `config.js` is the coin's landing spot.
+photo if that file is ever missing. The coin face is `public/img/coin.webp`, cut from Pexels photo
+1350463 by Hasan Albari (same free licence). `handsLanding` in `config.js` is the coin's landing spot.
