@@ -20,7 +20,7 @@
 <body>
   <header class="hero">
     <div class="hero-pattern" aria-hidden="true"></div>
-    <div class="wrap hero-inner hero-grid">
+    <div class="wrap hero-inner">
       <div class="hero-text">
       <p class="eyebrow"><span class="moon" aria-hidden="true">☾</span> Ramadan zakah, made simple</p>
       <h1>Work out your zakah in your own words</h1>
@@ -32,9 +32,6 @@
       </ul>
       <p class="hosted-by hidden" id="hosted-by"></p>
       </div>
-      <figure class="giving hero-giving" id="hero-giving">
-        <figcaption><span class="scroll-hint">Scroll down to give</span><span class="giving-message" id="giving-message" aria-live="polite"></span></figcaption>
-      </figure>
     </div>
   </header>
 
@@ -143,7 +140,6 @@
           <a id="donate-link" class="btn donate-btn" href="#" target="_blank" rel="noopener">Give to Gaza orphans</a>
           <div id="goal" class="goal hidden"><div class="bar"><span></span></div><p></p></div>
         </div>
-        <div class="giving donate-giving" id="donate-giving" aria-hidden="true"></div>
       </div>
 
       <form id="email-form" class="email" novalidate>
@@ -163,7 +159,6 @@
       </form>
 
       <div class="thanks hidden" id="thanks" tabindex="-1">
-        <div class="giving thanks-giving" id="thanks-giving" aria-hidden="true"></div>
         <h3>JazakAllahu khayran. Your breakdown is on its way.</h3>
         <p id="thanks-text">Check your inbox in the next few minutes. One last step: turn your zakah into help for orphans in Gaza today.</p>
         <a id="thanks-link" class="btn donate-btn big" href="#" target="_blank" rel="noopener">Give now</a>
@@ -196,6 +191,17 @@
       <a class="btn primary" href="share.html" target="_top">Make my link</a>
     </section>
   </main>
+
+  <section class="giving-scene" id="giving-scene" aria-labelledby="scene-title">
+    <div class="scene-inner">
+      <p class="scroll-hint" id="scene-hint">Your zakah is on its way</p>
+      <div class="giving scene-giving" id="scene-giving" aria-hidden="true"></div>
+      <div class="scene-message" id="giving-message" aria-live="polite"></div>
+      <h2 id="scene-title" class="scene-title">Let your zakah reach the hands that need it</h2>
+      <a id="scene-donate" class="btn donate-btn big" href="#" target="_blank" rel="noopener">Give to Gaza orphans</a>
+      <p class="fineprint scene-note" id="scene-note">Work out your zakah first? <a href="#describe">Start at the top</a>.</p>
+    </div>
+  </section>
 
   <footer class="wrap footer">
     <p>An independent tool made by a volunteer fundraiser. Not run by Muslims in Need or the National Zakat Foundation.</p>

@@ -302,3 +302,86 @@ function showMessage(messageEl, i) {
   messageEl.innerHTML = `<span class="msg-text">${m.text}</span><span class="msg-source">${m.source}</span>`;
   messageEl.classList.add('show');
 }
+
+// One coin for the whole page: it starts at the top of the screen and falls as the visitor
+// scrolls down the page, then lands in the hands in the final section at the bottom,
+// sinks in and disappears, and an Islamic message appears with the donate button.
+export function pageCoinScene({ scene, stage, messageEl, contentWidth = 780 } = {}) {
+  if (!scene || !stage) return;
+  mountGiving(stage);
+  const pile = stage.querySelector('.coin-pile');
+  if (reduceMotion()) {
+    showMessage(messageEl, 0);
+    scene.classList.add('landed');
+    return;
+  }
+  const coin = document.createElement('div');
+  coin.className = 'page-coin';
+  coin.innerHTML = `<div class="coin">${COIN_HTML}</div>`;
+  document.body.appendChild(coin);
+  const face = coin.querySelector('.coin');
+  let landed = false;
+  let msgIndex = 0;
+
+  const frame = () => {
+    const vw = document.documentElement.clientWidth;
+    const vh = window.innerHeight;
+    const max = Math.max(document.documentElement.scrollHeight - vh, 1);
+    const progress = Math.min(Math.max(window.scrollY / max, 0), 1);
+
+    // Where the coin travels while the page scrolls: down the right-hand margin on wide
+    // screens, down the right edge on phones.
+    const right = (vw + contentWidth) / 2;
+    const gutter = vw - right;
+    const wide = gutter > 90;
+    const trackX = wide ? right + gutter / 2 : vw - 24;
+    const trackY = 40 + progress * vh * 0.45;
+    const size = wide ? 1 : 0.75;
+
+    // As the hands come into view, steer the coin into them.
+    const p = pile.getBoundingClientRect();
+    const t = Math.min(Math.max((vh - p.top) / (vh * 0.55), 0), 1);
+    const e = t * t * (3 - 2 * t);
+    const x = trackX + (p.left - trackX) * e;
+    const y = trackY + (p.top - trackY) * e;
+    const sway = Math.sin(progress * Math.PI * 6) * 10 * (1 - e);
+
+    if (t >= 1 && !landed) {
+      landed = true;
+      coin.style.transform = `translate(${p.left}px, ${p.top}px)`;
+      face.animate(
+        [{ transform: 'translateY(0) scale(1) rotateX(55deg)', opacity: 1 }, { transform: 'translateY(18px) scale(.45) rotateX(72deg)', opacity: 0 }],
+        { duration: 560, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' },
+      );
+      sparkle(pile, 0, 0);
+      stage.classList.remove('glow');
+      void stage.offsetWidth;
+      stage.classList.add('glow');
+      showMessage(messageEl, msgIndex++ % GIVING_MESSAGES.length);
+      scene.classList.add('landed');
+      return;
+    }
+    if (landed) {
+      if (t < 0.85) {
+        landed = false;
+        face.getAnimations().forEach((a) => a.cancel());
+      } else {
+        coin.style.transform = `translate(${p.left}px, ${p.top}px)`;
+        return;
+      }
+    }
+    coin.style.transform = `translate(${x + sway}px, ${y}px)`;
+    face.style.transform = `rotateX(${e * 55}deg) rotateY(${window.scrollY * 0.9}deg) scale(${size + e * (1 - size)})`;
+  };
+
+  let ticking = false;
+  const queue = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => { ticking = false; frame(); });
+  };
+  window.addEventListener('scroll', queue, { passive: true });
+  window.addEventListener('resize', queue);
+  new ResizeObserver(queue).observe(document.body);
+  frame();
+}

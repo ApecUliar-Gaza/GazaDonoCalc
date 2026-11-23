@@ -2,7 +2,7 @@ import {
   calculate, CATEGORIES, LIABILITY_KINDS, OPTIONS, KARAT_PURITY, SOURCES, STATUS_TEXT, DEFAULT_SETTINGS, formatMoney,
 } from './zakat-engine.js';
 import { fundraiserFrom } from './fundraiser.js';
-import { mountGiving, dropCoin, coinsOnView, scrollCoinScene } from './coins.js';
+import { pageCoinScene } from './coins.js';
 
 const cfg = window.ZAKAH_CONFIG || {};
 const params = new URLSearchParams(location.search);
@@ -355,7 +355,6 @@ function showThanks(data) {
   else {
     $('#thanks-link').href = donate.href;
     $('#thanks-link').textContent = donate.textContent;
-    $('#thanks-link').addEventListener('click', () => dropCoin($('#thanks-giving')));
   }
   const share = new URL(location.href);
   share.searchParams.delete('embed');
@@ -366,14 +365,20 @@ function showThanks(data) {
   thanks.classList.remove('hidden');
   thanks.focus({ preventScroll: true });
   thanks.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  for (let i = 0; i < 4; i++) dropCoin($('#thanks-giving'), { delay: 300 + i * 260 });
 }
 
 function setupCoins() {
-  if (!embedded) scrollCoinScene($('#hero-giving'), { host: $('.hero'), messageEl: $('#giving-message') });
-  coinsOnView($('#donate-giving'), 3);
-  mountGiving($('#thanks-giving'));
-  $('#donate-link').addEventListener('click', () => dropCoin($('#donate-giving')));
+  // The final section mirrors the donate button above (yours, or the fundraiser's on a personal link).
+  const donate = $('#donate-link');
+  const sceneBtn = $('#scene-donate');
+  if ($('#donate').classList.contains('hidden')) sceneBtn.remove();
+  else {
+    sceneBtn.href = donate.href;
+    sceneBtn.textContent = donate.textContent;
+  }
+  if (fundraiser.custom && fundraiser.cause) $('#scene-title').textContent = `Let your zakah reach those in need: ${fundraiser.cause}`;
+  if (embedded) { $('#giving-scene').remove(); return; }
+  pageCoinScene({ scene: $('#giving-scene'), stage: $('#scene-giving'), messageEl: $('#giving-message') });
 }
 
 setupDonate();
