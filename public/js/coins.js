@@ -310,6 +310,55 @@ function showMessage(messageEl, i) {
 // One coin for the whole page: it starts at the top of the screen and falls as the visitor
 // scrolls down the page, then lands in the hands in the final section at the bottom,
 // sinks in and disappears, and an Islamic message appears with the donate button.
+// The hasanat meter: a bar that fills as the coin falls. It never shows a number of hasanat,
+// because only Allah knows the reward ("Allah multiplies for whom He wills", Qur'an 2:261).
+const STARS = 7; // the seven spikes of 2:261
+function hasanatMeter() {
+  const el = document.createElement('div');
+  el.className = 'hasanat';
+  el.setAttribute('aria-hidden', 'true');
+  el.innerHTML = `<div class="hasanat-label"><span class="h-title">Hasanat</span><span class="h-max">Maximum hasanat</span></div>
+    <div class="hasanat-track"><div class="hasanat-fill"></div>${Array.from({ length: STARS }, (_, i) => `<i class="h-star" style="top:${((i + 1) / (STARS + 1)) * 100}%"></i>`).join('')}</div>`;
+  document.body.appendChild(el);
+  const fill = el.querySelector('.hasanat-fill');
+  const stars = [...el.querySelectorAll('.h-star')];
+  let maxed = false;
+  return {
+    place({ x, top, height, wide, roomy }) {
+      el.style.transform = `translate(${x}px, ${top}px)`;
+      el.style.setProperty('--h', `${height}px`);
+      el.classList.toggle('narrow', !wide);
+      el.classList.toggle('roomy', roomy);
+    },
+    update(f, max) {
+      fill.style.transform = `scaleY(${f})`;
+      stars.forEach((s, i) => s.classList.toggle('lit', f >= (i + 1) / (STARS + 1)));
+      if (max && !maxed) {
+        maxed = true;
+        el.classList.add('maxed');
+        burst(el.querySelector('.hasanat-track'));
+      } else if (!max && maxed) {
+        maxed = false;
+        el.classList.remove('maxed');
+      }
+    },
+  };
+}
+
+function burst(track) {
+  for (let i = 0; i < 14; i++) {
+    const s = document.createElement('span');
+    s.className = 'h-burst';
+    track.appendChild(s);
+    const a = (Math.PI * 2 * i) / 14;
+    const d = 30 + Math.random() * 40;
+    s.animate(
+      [{ transform: 'translate(-50%,-50%) scale(1)', opacity: 1 }, { transform: `translate(calc(-50% + ${Math.cos(a) * d}px), calc(-50% + ${Math.sin(a) * d}px)) scale(.2)`, opacity: 0 }],
+      { duration: 900 + Math.random() * 400, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'forwards' },
+    ).onfinish = () => s.remove();
+  }
+}
+
 export function pageCoinScene({ scene, stage, messageEl, contentWidth = 780 } = {}) {
   if (!scene || !stage) return;
   mountGiving(stage);
@@ -326,6 +375,7 @@ export function pageCoinScene({ scene, stage, messageEl, contentWidth = 780 } = 
   const face = coin.querySelector('.coin');
   let landed = false;
   let msgIndex = 0;
+  const meter = hasanatMeter();
 
   const frame = () => {
     const vw = document.documentElement.clientWidth;
@@ -367,18 +417,23 @@ export function pageCoinScene({ scene, stage, messageEl, contentWidth = 780 } = 
       stage.classList.add('glow');
       showMessage(messageEl, msgIndex++ % GIVING_MESSAGES.length);
       scene.classList.add('landed');
+      meter.update(1, true);
       return;
     }
     if (landed) {
       if (t < 0.85) {
         landed = false;
         face.getAnimations().forEach((a) => a.cancel());
+        meter.update(Math.max(progress, e * 0.97), false);
       } else {
         coin.style.transform = `translate(${p.left}px, ${p.top}px)`;
         return;
       }
     }
     coin.style.transform = `translate(${x + sway}px, ${y}px)`;
+    // The meter sits beside the coin's path and fills as it falls (and empties on the way back up).
+    meter.place({ x: wide ? trackX + Math.min(34, gutter / 2 - 10) : vw - 7, top: 40, height: vh * 0.45, wide, roomy: gutter > 150 });
+    meter.update(Math.min(Math.max(progress, e * 0.97), 0.97), false);
     face.style.transform = `rotateX(${e * 55}deg) rotateY(${window.scrollY * 0.9}deg) scale(${size + e * (1 - size)})`;
   };
 
