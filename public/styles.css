@@ -219,9 +219,25 @@ body.embed .footer { padding-bottom: 16px; }
 @media (max-width: 760px) { .hero-grid { grid-template-columns: 1fr; gap: 8px; } }
 .giving { position: relative; margin: 0; perspective: 600px; }
 .giving .hands { display: block; width: 100%; height: auto; position: relative; z-index: 2; filter: drop-shadow(0 10px 18px rgba(0, 0, 0, .25)); transition: filter .3s; }
-.giving .coin-pile { position: absolute; left: 50%; bottom: 27%; width: 0; height: 0; z-index: 1; }
-.giving .coin { position: absolute; left: -17px; top: -17px; width: 34px; height: 34px; will-change: transform; transform-style: preserve-3d; }
-.giving .coin svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .3)); }
+.giving-stage { position: relative; }
+.giving .hands-back { position: absolute; left: 0; top: 0; width: 100%; height: auto; z-index: 0; }
+.giving .coin-pile { position: absolute; left: 50%; bottom: 25%; width: 0; height: 0; z-index: 3; perspective: 500px; }
+.giving.photo .coin-pile { z-index: 3; }
+.giving .coin { position: absolute; left: -16px; top: -16px; width: 32px; height: 32px; will-change: transform; transform-style: preserve-3d; }
+.coin-body { position: absolute; inset: 0; transform-style: preserve-3d; }
+.coin-face, .coin-edge, .coin-shine { position: absolute; inset: 0; border-radius: 50%; }
+.coin-face {
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255, 250, 220, .95) 0 6%, rgba(255, 246, 200, 0) 26%),
+    conic-gradient(from 210deg, #a8790c, #f5d36b, #fff1b3, #e0b23a, #9c6f08, #e9c24f, #fff0a8, #c8961c, #a8790c);
+  box-shadow: inset 0 0 0 1.5px #8a6208, inset 0 0 0 3px #f3d27a, inset 0 0 0 4px rgba(138, 98, 8, .7), inset 0 -3px 6px rgba(90, 60, 0, .45);
+}
+.coin-face svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.coin-edge { background: repeating-conic-gradient(#8c650c 0 4deg, #c69a2c 4deg 8deg); transform: translateZ(-3px); box-shadow: 0 0 0 1px #6e4f08; }
+.coin-shine { background: linear-gradient(115deg, rgba(255, 255, 255, 0) 30%, rgba(255, 255, 255, .55) 45%, rgba(255, 255, 255, 0) 60%); mix-blend-mode: screen; transform: translateZ(.5px); }
+.coin-shadow { position: absolute; left: -17px; top: -5px; width: 34px; height: 10px; border-radius: 50%; background: radial-gradient(closest-side, rgba(40, 20, 5, .6), rgba(40, 20, 5, 0)); opacity: 0; }
+.sparkle { position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; background: #fff7d0; clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); filter: drop-shadow(0 0 3px #ffd75e); pointer-events: none; z-index: 4; }
+.giving.photo .hands { border-radius: 16px; filter: none; }
 .giving.glow .hands { animation: handGlow .7s ease-out; }
 @keyframes handGlow { 0% { filter: drop-shadow(0 10px 18px rgba(0, 0, 0, .25)) drop-shadow(0 0 0 rgba(242, 201, 76, 0)); }
   35% { filter: drop-shadow(0 10px 18px rgba(0, 0, 0, .25)) drop-shadow(0 0 16px rgba(242, 201, 76, .85)); }
@@ -246,3 +262,5 @@ body.embed .footer { padding-bottom: 16px; }
 .thanks-giving { width: 200px; margin: 0 auto; padding-top: 90px; }
 body.embed .hero-giving { display: none; }
 @media (prefers-reduced-motion: reduce) { .giving.glow .hands { animation: none; } html { scroll-behavior: auto; } }
+.hero-giving { display: flex; flex-direction: column; }
+.hero-giving figcaption { order: 2; margin-top: 12px; }

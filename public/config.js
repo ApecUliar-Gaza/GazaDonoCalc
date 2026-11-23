@@ -18,4 +18,8 @@ window.ZAKAH_CONFIG = {
   // Optional Cloudflare Turnstile site key to stop bots using the email form.
   turnstileSiteKey: '',
   defaultCurrency: 'GBP',
+  // Optional: a real photo of open, cupped hands to replace the illustration (e.g. 'img/hands.jpg').
+  // handsLanding is where coins land, as % across and down the photo.
+  handsImage: '',
+  handsLanding: { x: 50, y: 62 },
 };
