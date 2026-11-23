@@ -2,7 +2,7 @@ import {
   calculate, CATEGORIES, LIABILITY_KINDS, OPTIONS, KARAT_PURITY, SOURCES, STATUS_TEXT, DEFAULT_SETTINGS, formatMoney,
 } from './zakat-engine.js';
 import { fundraiserFrom } from './fundraiser.js';
-import { mountGiving, dropCoin, coinsOnScroll, coinsOnView } from './coins.js';
+import { mountGiving, dropCoin, coinsOnView, scrollCoinScene } from './coins.js';
 
 const cfg = window.ZAKAH_CONFIG || {};
 const params = new URLSearchParams(location.search);
@@ -60,7 +60,6 @@ document.querySelectorAll('.chip').forEach((chip) =>
 
 $('#parse-btn').addEventListener('click', async () => {
   const text = textEl.value.trim();
-  dropCoin($('#hero-giving'));
   const status = $('#parse-status');
   if (text.length < 3) { status.textContent = 'Type a few words about your savings and assets first.'; return; }
   const btn = $('#parse-btn');
@@ -371,12 +370,10 @@ function showThanks(data) {
 }
 
 function setupCoins() {
-  coinsOnScroll($('#hero-giving'));
+  if (!embedded) scrollCoinScene($('#hero-giving'), { host: $('.hero'), messageEl: $('#giving-message') });
   coinsOnView($('#donate-giving'), 3);
   mountGiving($('#thanks-giving'));
   $('#donate-link').addEventListener('click', () => dropCoin($('#donate-giving')));
-  // Greet the visitor with a coin.
-  setTimeout(() => dropCoin($('#hero-giving')), 500);
 }
 
 setupDonate();

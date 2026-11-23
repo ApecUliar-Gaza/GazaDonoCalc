@@ -211,3 +211,94 @@ export function coinsOnView(el, count = 3) {
   }, { threshold: 0.5 });
   io.observe(el);
 }
+
+// One coin, tied to the scroll: it starts at the top of the page and falls as the visitor
+// scrolls down, lands in the hands, sinks in and disappears, and an Islamic message appears.
+// Scrolling back up lets it fall again, with the next message.
+export const GIVING_MESSAGES = [
+  { text: '“Charity does not decrease wealth.”', source: 'Prophet Muhammad ﷺ, Sahih Muslim 2588' },
+  { text: '“The example of those who spend their wealth in the way of Allah is like a seed which grows seven spikes; in each spike is a hundred grains.”', source: "Qur'an 2:261" },
+  { text: '“Take from their wealth a charity by which you purify them and cause them increase.”', source: "Qur'an 9:103" },
+  { text: '“Whoever relieves a believer of a hardship of this world, Allah will relieve him of a hardship of the Day of Resurrection.”', source: 'Prophet Muhammad ﷺ, Sahih Muslim 2699' },
+];
+
+export function scrollCoinScene(el, { host, messageEl, k = 1.6 } = {}) {
+  if (!el || !host) return;
+  mountGiving(el);
+  if (reduceMotion()) {
+    showMessage(messageEl, 0);
+    return;
+  }
+  const coin = document.createElement('div');
+  coin.className = 'scroll-coin';
+  coin.innerHTML = `<div class="coin">${COIN_HTML}</div>`;
+  host.appendChild(coin);
+  const pile = el.querySelector('.coin-pile');
+  let landed = false;
+  let msgIndex = 0;
+  let geo = null;
+
+  const measure = () => {
+    const hostRect = host.getBoundingClientRect();
+    const p = pile.getBoundingClientRect();
+    const lx = p.left - hostRect.left;
+    const ly = p.top - hostRect.top;
+    const narrow = window.innerWidth < 760;
+    const sx = narrow ? hostRect.width - 44 : lx;
+    const sy = 26;
+    geo = { lx, ly, sx, sy, d: Math.max(ly - sy, 1) };
+  };
+
+  const frame = () => {
+    if (!geo) measure();
+    const { lx, ly, sx, sy, d } = geo;
+    const p = Math.min((window.scrollY * k) / d, 1);
+    const e = p * p * (3 - 2 * p); // smooth start and finish
+    const x = sx + (lx - sx) * e + Math.sin(p * Math.PI * 2) * 18 * (1 - p);
+    const y = sy + (ly - sy) * p;
+    if (p >= 1 && !landed) {
+      landed = true;
+      coin.style.transform = `translate(${lx}px, ${ly}px)`;
+      coin.querySelector('.coin').animate(
+        [{ transform: 'translateY(0) scale(1) rotateX(55deg)', opacity: 1 }, { transform: 'translateY(16px) scale(.5) rotateX(70deg)', opacity: 0 }],
+        { duration: 520, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' },
+      );
+      sparkle(pile, 0, 0);
+      el.classList.remove('glow');
+      void el.offsetWidth;
+      el.classList.add('glow');
+      showMessage(messageEl, msgIndex++ % GIVING_MESSAGES.length);
+      return;
+    }
+    if (p < 0.75 && landed) {
+      landed = false;
+      coin.querySelector('.coin').getAnimations().forEach((a) => a.cancel());
+    }
+    if (!landed) {
+      const spin = p * 900;
+      const tilt = p * 50;
+      coin.style.transform = `translate(${x}px, ${y}px)`;
+      coin.querySelector('.coin').style.transform = `rotateX(${tilt}deg) rotateY(${spin}deg) scale(${1 + p * 0.1})`;
+    }
+  };
+
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => { ticking = false; frame(); });
+  }, { passive: true });
+  window.addEventListener('resize', () => { geo = null; frame(); });
+  // Images can change the layout once loaded.
+  el.querySelector('img')?.addEventListener('load', () => { geo = null; frame(); });
+  frame();
+}
+
+function showMessage(messageEl, i) {
+  if (!messageEl) return;
+  const m = GIVING_MESSAGES[i];
+  messageEl.classList.remove('show');
+  void messageEl.offsetWidth;
+  messageEl.innerHTML = `<span class="msg-text">${m.text}</span><span class="msg-source">${m.source}</span>`;
+  messageEl.classList.add('show');
+}
