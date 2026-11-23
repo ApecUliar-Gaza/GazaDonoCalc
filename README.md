@@ -92,3 +92,10 @@ commercial use, no attribution required), cropped to the hand. Source:
 https://www.pexels.com/photo/7592365/. `scripts/fetch-hands.mjs` only downloads a fallback
 photo if that file is ever missing. The coin face is `public/img/coin.webp`, cut from Pexels photo
 1350463 by Hasan Albari (same free licence). `handsLanding` in `config.js` is the coin's landing spot.
+
+## Short personal links
+
+`?link=` sends the donate buttons to any fundraiser on the allowed sites. A LaunchGood page only
+needs its path: `https://gazadonocalc.netlify.app/?link=v4/campaign/my_fundraiser&n=Aisha`.
+A full link also works (`?link=https://www.justgiving.com/page/x`), and `http://` is upgraded to
+https. Links to other sites are refused. `n` (name) and `t` (cause) are optional. `?f=` still works.

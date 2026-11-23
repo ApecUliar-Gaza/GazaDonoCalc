@@ -91,15 +91,15 @@
   <footer class="wrap footer"><p><a href="privacy.html">Privacy</a></p></footer>
 
   <script type="module">
-    import { safeFundraiserUrl, cleanText, buildLink } from './js/fundraiser.js';
+    import { expandLink, cleanText, buildLink } from './js/fundraiser.js';
     const $ = (s) => document.querySelector(s);
     const site = new URL('./', location.href).toString();
 
     $('#maker').addEventListener('submit', (e) => {
       e.preventDefault();
-      const url = safeFundraiserUrl($('#f').value);
+      const url = expandLink($('#f').value);
       if (!url) {
-        $('#err').textContent = 'Please paste the full https:// link to your page on one of the sites listed.';
+        $('#err').textContent = 'Please paste the link to your page on one of the sites listed.';
         return;
       }
       $('#err').textContent = '';
@@ -108,7 +108,7 @@
       const link = buildLink(site, { url, name, cause });
       $('#link').value = link;
       $('#open').href = link;
-      const msg = `Ramadan is coming. Work out your zakah in a minute by describing your savings in your own words, then ${cause ? `support ${cause}` : 'support my fundraiser'}: ${link}`;
+      const msg = `Ramadan is coming. Work out your zakah in a two-minute chat, then ${cause ? `support ${cause}` : 'support my fundraiser'}: ${link}`;
       $('#wa').href = `https://wa.me/?text=${encodeURIComponent(msg)}`;
       $('#story-line').value = `Not sure how much zakah you owe? Use this free zakah calculator: ${link}`;
       const embedSrc = buildLink(site, { url, name, cause }) + '&embed=1';
