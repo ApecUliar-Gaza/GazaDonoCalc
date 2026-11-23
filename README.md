@@ -1,6 +1,6 @@
 # Zakah Assistant
 
-A Ramadan lead generator for the Muslims in Need Gaza Emergency Appeal. People describe their wealth in plain words ("£5k savings, some gold and a pension"), check what the AI understood, see their zakah with every rule explained, and can have the breakdown emailed to them. A separate, unticked box lets them join a Ramadan mailing list. A donate button links to the fundraiser.
+A Ramadan lead generator for Wahaj's LaunchGood fundraiser for orphans in Gaza, run with Sabeel in partnership with Muslims in Need. People describe their wealth in plain words ("£5k savings, some gold and a pension"), check what the AI understood, see their zakah with every rule explained, and can have the breakdown emailed to them. A separate, unticked box lets them join a Ramadan mailing list. A donate button links to the fundraiser.
 
 ## How it works
 
@@ -41,7 +41,7 @@ The AI never decides a ruling. It only fills in the table; the person checks and
 
 Every result includes a disclaimer to consult a scholar, a note on the eight eligible recipient groups (Qur'an 9:60) and links to the sources. **Please have a scholar or your imam review `zakat-engine.js` and the page text before launch.**
 
-Charity eligibility: the Muslims in Need Gaza Emergency Appeal page (charity no. 1158317) says the appeal is zakah-eligible "as the beneficiaries are among the most vulnerable and fall within Zakat-eligible categories", and its donation form has a Zakat option. The page tells donors to pick Zakat as the donation type.
+Charity eligibility: the fundraiser (https://www.launchgood.com/v4/campaign/wahaj_c7__sabeel_fundraising_for_gaza_orphans) goes to Muslims in Need (charity no. 1158317) for orphans in Gaza, but as of 23 Nov 2026 the page says nothing about zakah. Orphans who are poor are eligible recipients, so the page and email tell zakah-payers to confirm with Muslims in Need first, or give as sadaqah. Once MiN confirms gifts via this page are ring-fenced as zakah, set `zakahConfirmed: true` in `config.js` and `FUNDRAISER_ZAKAH_CONFIRMED=true`.
 
 ## Set up (about 30 minutes)
 

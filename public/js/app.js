@@ -234,14 +234,15 @@ function render(rebuildLists = true) {
 
 // ---------- donate ----------
 function setupDonate() {
-  $('#charity-name').textContent = cfg.charityName || 'Muslims in Need';
-  $('#charity-number').textContent = cfg.charityNumber || '1158317';
-  $('#appeal-name').textContent = cfg.appealName || 'Gaza Emergency Appeal';
+  const charity = `${esc(cfg.charityName || 'Muslims in Need')} (registered charity ${esc(cfg.charityNumber || '1158317')})`;
+  $('#donate-text').innerHTML = cfg.zakahConfirmed
+    ? `This fundraiser sends every gift to ${charity} to support orphans in Gaza, and it accepts zakah. Orphans in need are among the people zakah can be given to. When you donate, make sure your gift is marked as <strong>Zakat</strong> so it is kept separate.`
+    : `This fundraiser sends every gift to ${charity} to support orphans in Gaza. Orphans who are poor are among the people zakah can be given to, but the fundraiser page doesn't yet say whether gifts are kept separate as zakah. <strong>If you are giving zakah</strong>, please confirm with ${esc(cfg.charityName || 'Muslims in Need')} first, or give it as sadaqah here.`;
   document.querySelectorAll('.organiser').forEach((el) => { el.textContent = cfg.organiserName || 'the organiser'; });
   const link = $('#donate-link');
   if (!cfg.fundraiserUrl) { $('#donate').classList.add('hidden'); return; }
   link.href = cfg.fundraiserUrl;
-  link.textContent = cfg.organiserName ? `Give to the Gaza appeal with ${cfg.organiserName}` : 'Give to the Gaza appeal';
+  link.textContent = cfg.organiserName ? `Give to Gaza orphans with ${cfg.organiserName}` : 'Give to Gaza orphans';
   if (cfg.fundraiserGoal && cfg.fundraiserRaised != null) {
     const pctDone = Math.min(100, Math.round((cfg.fundraiserRaised / cfg.fundraiserGoal) * 100));
     $('#goal .bar span').style.width = `${pctDone}%`;

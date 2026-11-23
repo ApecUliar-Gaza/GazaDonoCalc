@@ -179,11 +179,15 @@ export function renderEmail({ firstName, result }) {
   const s = result.settings;
   const settingsLine = `Nisab: ${s.nisabMetal} (${result.nisabGrams}g = ${m(result.nisab ?? 0)}). Jewellery: ${s.jewellery === 'include' ? 'included (Hanafi view)' : 'worn jewellery exempt (Maliki, Shafi\'i, Hanbali view)'}. Debts: ${s.deductDebts ? 'deducted' : 'not deducted'}. Rate: ${(result.rate * 100).toFixed(3).replace(/0+$/, '')}% (${s.yearType} year). Prices used: gold ${m(result.prices.goldPerGram)}/g, silver ${m(result.prices.silverPerGram)}/g.`;
 
+  const zakahConfirmed = process.env.FUNDRAISER_ZAKAH_CONFIRMED === 'true';
+  const donateText = zakahConfirmed
+    ? 'This fundraiser sends every gift to Muslims in Need (charity no. 1158317) to support orphans in Gaza, and it accepts zakah. Please make sure your gift is marked as <strong>Zakat</strong> so it is kept separate.'
+    : 'This fundraiser sends every gift to Muslims in Need (charity no. 1158317) to support orphans in Gaza. Orphans who are poor are among the people zakah can be given to, but the page does not yet say whether gifts are kept separate as zakah. <strong>If you are giving zakah</strong>, please confirm with Muslims in Need first, or give it here as sadaqah.';
   const cta = fundraiserUrl
     ? `<div style="background:#0f5132;color:#fff;padding:18px;border-radius:10px;margin:20px 0">
-        <p style="margin:0 0 8px;font-size:18px"><strong>Give your zakah to families in Gaza</strong></p>
-        <p style="margin:0 0 12px">Muslims in Need (charity no. 1158317) says its Gaza Emergency Appeal is zakah-eligible and lets you mark your gift as Zakat so it is kept separate. Please choose <strong>Zakat</strong> as the donation type.</p>
-        <a href="${escapeHtml(fundraiserUrl)}" style="display:inline-block;background:#fff;color:#0f5132;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold">Give to the Gaza appeal${organiser ? ` with ${escapeHtml(organiser)}` : ''}</a>
+        <p style="margin:0 0 8px;font-size:18px"><strong>Support orphans in Gaza</strong></p>
+        <p style="margin:0 0 12px">${donateText}</p>
+        <a href="${escapeHtml(fundraiserUrl)}" style="display:inline-block;background:#fff;color:#0f5132;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold">Give to Gaza orphans${organiser ? ` with ${escapeHtml(organiser)}` : ''}</a>
       </div>`
     : '';
 
@@ -224,7 +228,7 @@ export function renderEmail({ firstName, result }) {
     `Net zakatable wealth: ${m(result.netZakatable)}. Nisab: ${m(result.nisab ?? 0)}.`,
     settingsLine,
     '',
-    fundraiserUrl ? `Give your zakah to the Muslims in Need Gaza Emergency Appeal (choose "Zakat" as the donation type): ${fundraiserUrl}` : '',
+    fundraiserUrl ? `Support orphans in Gaza through Muslims in Need: ${fundraiserUrl}${zakahConfirmed ? ' (mark your gift as Zakat)' : ' (if giving zakah, please confirm with Muslims in Need first, or give as sadaqah)'}` : '',
     '',
     'This is a guide based on mainstream scholarly views (mostly NZF UK guidance), not a fatwa. Please confirm complex cases with a qualified scholar.',
   ].join('\n');
