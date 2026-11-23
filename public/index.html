@@ -20,7 +20,8 @@
 <body>
   <header class="hero">
     <div class="hero-pattern" aria-hidden="true"></div>
-    <div class="wrap hero-inner">
+    <div class="wrap hero-inner hero-grid">
+      <div class="hero-text">
       <p class="eyebrow"><span class="moon" aria-hidden="true">☾</span> Ramadan zakah, made simple</p>
       <h1>Work out your zakah in your own words</h1>
       <p class="lead">Tell us what you have, like you'd tell a friend. We turn it into a clear breakdown using mainstream scholarly guidance, and show every rule we used.</p>
@@ -30,6 +31,10 @@
         <li>Takes about a minute</li>
       </ul>
       <p class="hosted-by hidden" id="hosted-by"></p>
+      </div>
+      <figure class="giving hero-giving" id="hero-giving">
+        <figcaption>Every coin of your zakah reaches someone in need</figcaption>
+      </figure>
     </div>
   </header>
 
@@ -132,10 +137,13 @@
 
       <div class="donate" id="donate">
         <div class="donate-pattern" aria-hidden="true"></div>
-        <h3 id="donate-title">Support orphans in Gaza</h3>
-        <p id="donate-text"></p>
-        <a id="donate-link" class="btn donate-btn" href="#" target="_blank" rel="noopener">Give to Gaza orphans</a>
-        <div id="goal" class="goal hidden"><div class="bar"><span></span></div><p></p></div>
+        <div class="donate-body">
+          <h3 id="donate-title">Support orphans in Gaza</h3>
+          <p id="donate-text"></p>
+          <a id="donate-link" class="btn donate-btn" href="#" target="_blank" rel="noopener">Give to Gaza orphans</a>
+          <div id="goal" class="goal hidden"><div class="bar"><span></span></div><p></p></div>
+        </div>
+        <div class="giving donate-giving" id="donate-giving" aria-hidden="true"></div>
       </div>
 
       <form id="email-form" class="email" novalidate>
@@ -153,6 +161,14 @@
         <p id="email-status" class="status" role="status" aria-live="polite"></p>
         <p class="fineprint">We use your email to send this breakdown. We only add you to the mailing list if you tick the box. We don't keep your financial details. See our <a href="privacy.html" target="_top">privacy notice</a>.</p>
       </form>
+
+      <div class="thanks hidden" id="thanks" tabindex="-1">
+        <div class="giving thanks-giving" id="thanks-giving" aria-hidden="true"></div>
+        <h3>JazakAllahu khayran. Your breakdown is on its way.</h3>
+        <p id="thanks-text">Check your inbox in the next few minutes. One last step: turn your zakah into help for orphans in Gaza today.</p>
+        <a id="thanks-link" class="btn donate-btn big" href="#" target="_blank" rel="noopener">Give now</a>
+        <p class="fineprint">Know someone who needs to work out their zakah? <a href="#" id="thanks-share">Share this calculator on WhatsApp</a>.</p>
+      </div>
 
       <details class="breakdown">
         <summary>How each item was treated, with sources</summary>

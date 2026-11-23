@@ -2,6 +2,7 @@ import {
   calculate, CATEGORIES, LIABILITY_KINDS, OPTIONS, KARAT_PURITY, SOURCES, STATUS_TEXT, DEFAULT_SETTINGS, formatMoney,
 } from './zakat-engine.js';
 import { fundraiserFrom } from './fundraiser.js';
+import { mountGiving, dropCoin, coinsOnScroll, coinsOnView } from './coins.js';
 
 const cfg = window.ZAKAH_CONFIG || {};
 const params = new URLSearchParams(location.search);
@@ -59,6 +60,7 @@ document.querySelectorAll('.chip').forEach((chip) =>
 
 $('#parse-btn').addEventListener('click', async () => {
   const text = textEl.value.trim();
+  dropCoin($('#hero-giving'));
   const status = $('#parse-status');
   if (text.length < 3) { status.textContent = 'Type a few words about your savings and assets first.'; return; }
   const btn = $('#parse-btn');
@@ -331,6 +333,7 @@ $('#email-form').addEventListener('submit', async (e) => {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || 'We could not send the email. Please try again.');
+    showThanks(data);
     status.textContent = data.doubleOptIn
       ? 'Sent. Check your inbox, and click the confirmation link to join the Ramadan list.'
       : data.subscribed ? 'Sent, and you are on the Ramadan list. JazakAllahu khayran.' : 'Sent. Check your inbox.';
@@ -345,7 +348,39 @@ function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 }
 
+function showThanks(data) {
+  const donate = $('#donate-link');
+  const thanks = $('#thanks');
+  if (data.doubleOptIn) $('#thanks-text').textContent = 'Check your inbox, and click the link to confirm you want Ramadan updates. One last step: turn your zakah into help today.';
+  if ($('#donate').classList.contains('hidden')) $('#thanks-link').remove();
+  else {
+    $('#thanks-link').href = donate.href;
+    $('#thanks-link').textContent = donate.textContent;
+    $('#thanks-link').addEventListener('click', () => dropCoin($('#thanks-giving')));
+  }
+  const share = new URL(location.href);
+  share.searchParams.delete('embed');
+  share.hash = '';
+  $('#thanks-share').href = `https://wa.me/?text=${encodeURIComponent(`Work out your zakah in a minute by describing your savings in your own words: ${share}`)}`;
+  $('#thanks-share').target = '_blank';
+  $('#email-form').classList.add('hidden');
+  thanks.classList.remove('hidden');
+  thanks.focus({ preventScroll: true });
+  thanks.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  for (let i = 0; i < 4; i++) dropCoin($('#thanks-giving'), { delay: 300 + i * 260 });
+}
+
+function setupCoins() {
+  coinsOnScroll($('#hero-giving'));
+  coinsOnView($('#donate-giving'), 3);
+  mountGiving($('#thanks-giving'));
+  $('#donate-link').addEventListener('click', () => dropCoin($('#donate-giving')));
+  // Greet the visitor with a coin.
+  setTimeout(() => dropCoin($('#hero-giving')), 500);
+}
+
 setupDonate();
+setupCoins();
 setupEmbed();
 setupTurnstile();
 loadPrices();
