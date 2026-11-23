@@ -75,6 +75,8 @@ const COIN_HTML = `
 
 const reduceMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
+const drawnStage = () => `<div class="giving-stage">${HOLLOW_SVG}<div class="coin-pile"></div>${HANDS_SVG}</div>`;
+
 export function mountGiving(el) {
   if (!el || el.dataset.mounted) return;
   el.dataset.mounted = '1';
@@ -83,8 +85,13 @@ export function mountGiving(el) {
     const x = cfg.handsLanding?.x ?? 50;
     const y = cfg.handsLanding?.y ?? 60;
     el.insertAdjacentHTML('beforeend', `<div class="giving-stage"><img class="hands" src="${cfg.handsImage}" alt="" loading="lazy"><div class="coin-pile" style="left:${x}%;top:${y}%;bottom:auto"></div></div>`);
+    // If the photo is missing, fall back to the drawn hands rather than showing a broken image.
+    el.querySelector('img.hands').addEventListener('error', () => {
+      el.classList.remove('photo');
+      el.querySelector('.giving-stage').outerHTML = drawnStage();
+    }, { once: true });
   } else {
-    el.insertAdjacentHTML('beforeend', `<div class="giving-stage">${HOLLOW_SVG}<div class="coin-pile"></div>${HANDS_SVG}</div>`);
+    el.insertAdjacentHTML('beforeend', drawnStage());
   }
   el._pile = 0;
 }
@@ -309,7 +316,7 @@ function showMessage(messageEl, i) {
 export function pageCoinScene({ scene, stage, messageEl, contentWidth = 780 } = {}) {
   if (!scene || !stage) return;
   mountGiving(stage);
-  const pile = stage.querySelector('.coin-pile');
+  const pileEl = () => stage.querySelector(".coin-pile"); // looked up each time: the photo can fall back to the drawing
   if (reduceMotion()) {
     showMessage(messageEl, 0);
     scene.classList.add('landed');
@@ -339,7 +346,7 @@ export function pageCoinScene({ scene, stage, messageEl, contentWidth = 780 } = 
     const size = wide ? 1 : 0.75;
 
     // As the hands come into view, steer the coin into them.
-    const p = pile.getBoundingClientRect();
+    const p = pileEl().getBoundingClientRect();
     const t = Math.min(Math.max((vh - p.top) / (vh * 0.55), 0), 1);
     const e = t * t * (3 - 2 * t);
     const x = trackX + (p.left - trackX) * e;
@@ -353,7 +360,7 @@ export function pageCoinScene({ scene, stage, messageEl, contentWidth = 780 } = 
         [{ transform: 'translateY(0) scale(1) rotateX(55deg)', opacity: 1 }, { transform: 'translateY(18px) scale(.45) rotateX(72deg)', opacity: 0 }],
         { duration: 560, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' },
       );
-      sparkle(pile, 0, 0);
+      sparkle(pileEl(), 0, 0);
       stage.classList.remove('glow');
       void stage.offsetWidth;
       stage.classList.add('glow');

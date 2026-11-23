@@ -3,6 +3,7 @@ import {
 } from './zakat-engine.js';
 import { fundraiserFrom } from './fundraiser.js';
 import { pageCoinScene } from './coins.js';
+import { startChat } from './chat.js';
 
 const cfg = window.ZAKAH_CONFIG || {};
 const params = new URLSearchParams(location.search);
@@ -53,45 +54,98 @@ function toBase(amount, currency) {
   return rate ? Math.round((amount / rate) * 100) / 100 : amount;
 }
 
-// ---------- describe ----------
-const textEl = $('#wealth-text');
-document.querySelectorAll('.chip').forEach((chip) =>
-  chip.addEventListener('click', () => { textEl.value = chip.dataset.example; textEl.focus(); }));
+// ---------- chat ----------
+// Free-text description -> rows, via the AI reader. Throws a friendly message on failure.
+async function parseText(text) {
+  const res = await fetch('/api/parse', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text }) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error === 'ai_unavailable' || !data.error ? "I couldn't read that automatically right now." : data.error);
+  const assets = data.assets.map((a) => ({
+    id: nextId++, ...a,
+    amount: toBase(a.amount, a.currency),
+    karat: a.karat && KARAT_PURITY[a.karat] ? a.karat : null,
+  }));
+  const liabilities = data.liabilities.map((l) => ({ id: nextId++, ...l, amount: toBase(l.amount, l.currency) }));
+  state.assets.push(...assets);
+  state.liabilities.push(...liabilities);
+  showQuestions([], data.ignored);
+  render();
+  return { assets, liabilities };
+}
 
-$('#parse-btn').addEventListener('click', async () => {
-  const text = textEl.value.trim();
-  const status = $('#parse-status');
-  if (text.length < 3) { status.textContent = 'Type a few words about your savings and assets first.'; return; }
-  const btn = $('#parse-btn');
-  btn.disabled = true;
-  status.textContent = 'Reading your description…';
-  try {
-    const res = await fetch('/api/parse', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text }) });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error === 'ai_unavailable' || !data.error ? 'We could not read that automatically right now. Please add your items below instead.' : data.error);
-    state.assets = data.assets.map((a) => ({
-      id: nextId++, ...a,
-      amount: toBase(a.amount, a.currency),
-      // Unknown karat: engine treats it as 24ct (pure), the cautious reading. The user can change it.
-      karat: a.karat && KARAT_PURITY[a.karat] ? a.karat : null,
-    }));
-    state.liabilities = data.liabilities.map((l) => ({ id: nextId++, ...l, amount: toBase(l.amount, l.currency) }));
-    showQuestions(data.questions, data.ignored);
-    status.textContent = state.assets.length ? 'Done. Please check the items below.' : '';
-    showReview();
-  } catch (err) {
-    status.textContent = err.message;
-    if (!state.assets.length) state.assets.push(blankAsset());
-    showReview();
-  } finally {
-    btn.disabled = false;
+let chatResult = null; // the result bubble in the chat, kept up to date by render()
+let chatStarted = false;
+function onChatChange() {
+  if (!chatStarted) return;
+  render();
+}
+
+function onChatDone(el) {
+  chatResult = el;
+  $('#review').classList.remove('hidden');
+  $('#result').classList.remove('hidden');
+  setupSticky();
+  render();
+}
+
+// The result inside the chat: amount, what it means, and the push to give.
+function renderChatResult(result) {
+  if (!chatResult) return;
+  const m = (v) => formatMoney(v, state.settings.currency);
+  const amount = result.status === 'missing_prices' ? null : result.zakahDue;
+  const canGive = !$('#donate').classList.contains('hidden');
+  let head;
+  if (result.status === 'due') head = `<p class="res-label">Your zakah this year</p><p class="res-amount">${m(result.zakahDue)}</p>`;
+  else if (result.status === 'hawl_not_complete') head = `<p class="res-label">Not due yet</p><p class="res-amount">${m(0)}</p><p>Once a full Islamic year has passed with your wealth above the nisab, it will be about <b>${m(result.zakahIfDue)}</b>.</p>`;
+  else if (result.status === 'below_nisab') head = `<p class="res-label">No zakah is due</p><p class="res-amount">${m(0)}</p><p>Your net zakatable wealth (${m(result.netZakatable)}) is below the nisab (${m(result.nisab)}).</p>`;
+  else head = `<p class="res-label">I need today's gold and silver prices</p><p>Add them in <a href="#settings">the settings</a> and your total will appear.</p>`;
+  const sums = `<p class="res-sum">${m(result.zakatableAssets)} counted, less ${m(result.deductions)} of debts, is ${m(result.netZakatable)}. Zakah is 2.5% of that${result.alreadyPaid ? `, less the ${m(result.alreadyPaid)} you have already given` : ''}.</p>`;
+  const flags = result.flags.length ? `<p class="res-flags"><b>Worth checking:</b> ${[...new Set(result.flags.map((f) => f.question))].map(esc).join(' ')}</p>` : '';
+  const give = canGive
+    ? (amount > 0
+      ? `${impactLine(amount)}<a class="btn donate-btn big give-amount" href="${esc($('#donate-link').href)}" target="_blank" rel="noopener" data-amount="${amount.toFixed(2)}">Give my ${m(amount)} now</a>
+         <p class="fineprint">We copy the amount for you, so you can paste it on the donation page. ${zakahNote()}</p>`
+      : `<p>You can still give sadaqah to orphans in Gaza. Even a little is loved by Allah.</p><a class="btn donate-btn" href="${esc($('#donate-link').href)}" target="_blank" rel="noopener">Give sadaqah</a>`)
+    : '';
+  chatResult.innerHTML = `${head}${result.status === 'due' ? sums : ''}${flags}${give}
+    <p class="res-links"><a href="#email-form">Email me this breakdown</a> · <a href="#result">How each item was treated</a> · <button type="button" class="linkish" data-restart>Start again</button></p>`;
+}
+
+// What their zakah could do, from the fundraiser's own giving levels.
+function impactLine(amount) {
+  if (fundraiser.custom || !cfg.impactPerYear) return '';
+  const per = cfg.impactPerYear;
+  const m = (v) => formatMoney(v, 'GBP').replace('.00', '');
+  if (state.settings.currency !== 'GBP') return '';
+  if (amount >= per) {
+    const n = Math.floor(amount / per);
+    return `<p class="impact">That's enough to <b>sponsor ${n} orphan${n > 1 ? 's' : ''} in Gaza for a year</b> (${m(per)} each).</p>`;
   }
+  const months = Math.max(1, Math.floor(amount / (per / 12)));
+  return `<p class="impact">That's about <b>${months} month${months > 1 ? 's' : ''} of care for an orphan in Gaza</b> (${m(per)} sponsors one for a year).</p>`;
+}
+
+function zakahNote() {
+  if (fundraiser.custom) return 'If giving zakah, check the charity accepts it.';
+  return cfg.zakahConfirmed ? 'Choose "Zakat" on the donation form.' : `If you are giving it as zakah, please check with ${esc(cfg.charityName || 'the charity')} first, or give it as sadaqah.`;
+}
+
+// Copy the amount before the donation page opens.
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('a.give-amount, #sticky-donate');
+  if (!a) return;
+  const amount = a.dataset.amount;
+  if (!amount || !navigator.clipboard) return;
+  navigator.clipboard.writeText(amount).then(() => toast(`${formatMoney(Number(amount), state.settings.currency)} copied. Paste it as your donation amount.`)).catch(() => {});
 });
 
-$('#manual-btn').addEventListener('click', () => {
-  if (!state.assets.length) state.assets.push(blankAsset());
-  showReview();
-});
+function toast(text) {
+  const t = $('#toast');
+  t.textContent = text;
+  t.classList.remove('hidden');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.add('hidden'), 6000);
+}
 
 function showQuestions(questions = [], ignored = []) {
   const box = $('#questions');
@@ -111,6 +165,7 @@ function showReview() {
 }
 
 const blankAsset = () => ({ id: nextId++, category: 'cash', description: '', amount: null });
+document.querySelector('#describe .chat-head [data-restart]').addEventListener('click', () => { chatResult = null; });
 const blankLiability = () => ({ id: nextId++, kind: 'due_within_12_months', description: '', amount: null });
 $('#add-asset').addEventListener('click', () => { state.assets.push(blankAsset()); render(); });
 $('#add-liability').addEventListener('click', () => { state.liabilities.push(blankLiability()); render(); });
@@ -121,9 +176,15 @@ function setupSticky() {
   if (stickyReady || embedded) return;
   stickyReady = true;
   const bar = $('#sticky-total');
+  // Shown once the result is off screen, but never over the chat (it would cover the input).
+  let totalSeen = true;
+  let chatSeen = true;
+  const update = () => bar.classList.toggle('hidden', totalSeen || chatSeen);
   new IntersectionObserver(([entry]) => {
-    bar.classList.toggle('hidden', entry.isIntersecting || entry.boundingClientRect.top < 0);
+    totalSeen = entry.isIntersecting || entry.boundingClientRect.top < 0;
+    update();
   }).observe($('#result .total'));
+  new IntersectionObserver(([entry]) => { chatSeen = entry.isIntersecting; update(); }).observe($('#describe .chat-form'));
 }
 
 // ---------- settings ----------
@@ -229,6 +290,12 @@ function render(rebuildLists = true) {
   $('#status-text').textContent = STATUS_TEXT[result.status];
   $('#result').dataset.status = result.status;
   $('#sticky-amount').textContent = result.status === 'missing_prices' ? '–' : m(result.zakahDue);
+  const sticky = $('#sticky-donate');
+  if (sticky) {
+    sticky.dataset.amount = result.zakahDue > 0 ? result.zakahDue.toFixed(2) : '';
+    sticky.textContent = result.zakahDue > 0 ? `Give ${m(result.zakahDue).replace('.00', '')}` : 'Give now';
+  }
+  renderChatResult(result);
   const sym = { GBP: '£', USD: '$', EUR: '€', CAD: '$', AUD: '$' }[state.settings.currency] || '';
   document.querySelectorAll('.cur-symbol').forEach((el) => { el.textContent = sym; });
   $('#zakah-amount').textContent = result.status === 'missing_prices' ? '–' : m(result.zakahDue);
@@ -367,6 +434,19 @@ function showThanks(data) {
   thanks.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
+// Every donate button on the page points to the same place as the main one.
+function mirrorDonate() {
+  const main = $('#donate-link');
+  const off = $('#donate').classList.contains('hidden');
+  ['#top-donate', '#sticky-donate'].forEach((sel) => {
+    const el = $(sel);
+    if (!el) return;
+    if (off) { el.remove(); return; }
+    el.href = main.href;
+  });
+  if (!off && fundraiser.custom) $('#top-donate').textContent = fundraiser.name ? `Give with ${fundraiser.name}` : 'Donate';
+}
+
 function setupCoins() {
   // The final section mirrors the donate button above (yours, or the fundraiser's on a personal link).
   const donate = $('#donate-link');
@@ -382,7 +462,17 @@ function setupCoins() {
 }
 
 setupDonate();
+mirrorDonate();
 setupCoins();
+startChat({
+  root: $('#describe'),
+  state,
+  newId: () => nextId++,
+  onChange: onChatChange,
+  onDone: onChatDone,
+  parseText,
+});
+chatStarted = true;
 setupEmbed();
 setupTurnstile();
 loadPrices();

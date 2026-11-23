@@ -32,7 +32,24 @@ export const DEFAULT_SETTINGS = Object.freeze({
   deductDebts: true, // Hanafi/Hanbali and NZF allow deducting debts due within 12 months.
   yearType: 'lunar',
   hawl: 'yes', // 'yes' | 'no' | 'unsure'
+  // NZF: zakah on a defined-contribution pension is due every year, even before you can
+  // access it. 'on_access': the other contemporary view, nothing until it can be accessed.
+  pensionView: 'nzf',
+  alreadyPaid: 0, // zakah already given in advance for this zakah year (deducted from what is due)
 });
+
+// Typical gold weights, used only when someone doesn't know the weight of their jewellery.
+// These are rough, so the result says they are estimates and asks for a weighing.
+export const GOLD_PIECE_GRAMS = {
+  ring: 4,
+  earrings: 4,
+  chain: 10,
+  bracelet: 10,
+  bangle: 12,
+  necklace: 20,
+  set: 45, // necklace + earrings + bangle, as often given at weddings
+  coin: 8, // a full sovereign is 7.98g at 22 carat
+};
 
 export const SOURCES = {
   nzfCalc: {
@@ -55,7 +72,7 @@ export const CATEGORIES = {
   silver: { label: 'Silver', hint: 'Coins, bars or jewellery. Enter grams if you know them, otherwise its value.' },
   shares: { label: 'Shares, funds and stocks & shares ISAs', hint: 'Current market value.' },
   pension: { label: 'Pension', hint: 'Current pot value for defined-contribution schemes (workplace pension, SIPP).' },
-  business_stock: { label: 'Business stock and business cash', hint: 'Stock at the price you would sell it, plus business cash.' },
+  business_stock: { label: 'Business stock, cash and money customers owe', hint: 'Stock at the price you would sell it, plus business cash.' },
   receivable: { label: 'Money owed to you', hint: 'Loans you made to others, unpaid invoices.' },
   crypto: { label: 'Cryptocurrency', hint: 'Value in your currency on your zakah date.' },
   property: { label: 'Property', hint: 'Only property bought to resell is zakatable.' },
@@ -65,6 +82,7 @@ export const CATEGORIES = {
 export const LIABILITY_KINDS = {
   due_within_12_months: { label: 'Debt due within the next 12 months', hint: 'Bills, personal loans, credit cards, money you owe friends or family.' },
   instalments_next_12_months: { label: 'Next 12 months of a long-term debt', hint: 'e.g. 12 mortgage or car-finance payments, without the interest.' },
+  business_due: { label: 'Business bills due within 12 months', hint: 'Suppliers, wages, rent and tax the business owes and must pay in the next 12 months.' },
   long_term_total: { label: 'Full balance of a long-term debt', hint: 'Not deductible in full. Enter only the next 12 months of payments instead.' },
   unknown: { label: 'Not sure when it is due', hint: 'Choose another type once you know how much is due in the next 12 months.' },
 };
@@ -93,6 +111,10 @@ export const OPTIONS = {
     rental: 'Rented out',
     unknown: 'Not sure',
   },
+  goldPiece: {
+    ring: 'Ring', earrings: 'Pair of earrings', chain: 'Chain', bracelet: 'Bracelet', bangle: 'Bangle',
+    necklace: 'Necklace', set: 'Wedding set (necklace, earrings, bangle)', coin: 'Sovereign / coin',
+  },
   receivableStrength: {
     strong: 'Likely to be repaid',
     weak: 'Unlikely or disputed',
@@ -112,13 +134,30 @@ const pct = (v) => {
   return Math.min(Math.max(n, 0), 100) / 100;
 };
 
+// Weight from pieces (e.g. 2 bangles) when the weight isn't known.
+function estimatedGrams(item) {
+  const each = GOLD_PIECE_GRAMS[item.piece];
+  const count = num(item.count) || (each ? 1 : 0);
+  return each ? each * count : 0;
+}
+
 function metalValue(item, prices) {
-  const grams = num(item.grams);
+  let grams = num(item.grams);
+  let estimated = false;
+  if (!grams && !num(item.amount) && item.category === 'gold') {
+    grams = estimatedGrams(item);
+    estimated = grams > 0;
+  }
   if (grams > 0) {
     if (item.category === 'gold') {
-      const purity = KARAT_PURITY[item.karat] ?? KARAT_PURITY[24];
-      if (!prices?.goldPerGram) return { value: 0, missingPrice: true };
-      return { value: grams * purity * prices.goldPerGram, grams, purity };
+      // Unknown karat: jewellery in the UK is usually 22ct (South Asian) or 9-18ct (British);
+      // we assume 22ct for jewellery and 24ct for coins/bars, and ask.
+      const known = KARAT_PURITY[item.karat] !== undefined;
+      const assumed = item.use === 'personal_jewellery' ? 22 : 24;
+      const purity = known ? KARAT_PURITY[item.karat] : KARAT_PURITY[assumed];
+      const out = { grams, purity, estimated, assumedKarat: known ? null : assumed };
+      if (!prices?.goldPerGram) return { ...out, value: 0, missingPrice: true };
+      return { ...out, value: grams * purity * prices.goldPerGram };
     }
     const purity = SILVER_PURITY[item.fineness] ?? SILVER_PURITY[999];
     if (!prices?.silverPerGram) return { value: 0, missingPrice: true };
@@ -133,6 +172,22 @@ function metalValue(item, prices) {
  * `flag` is a question the user should answer; the row still gets the default shown.
  */
 export function evaluateAsset(item, settings, prices) {
+  const r = evaluateWholeAsset(item, settings, prices);
+  const share = ownership(item);
+  if (share === 1) return r;
+  const shareNote = share === 0
+    ? ' This is not yours (e.g. held for someone else), so it is not counted: the owner pays zakah on it.'
+    : ` You own ${round(share * 100, 1)}% of this, so only your share is counted. Each owner works out their own zakah.`;
+  return { ...r, value: r.value * share, zakatable: r.zakatable * share, note: r.note + shareNote };
+}
+
+// Ownership share of a jointly held asset or debt (0-100%, default 100%).
+function ownership(item) {
+  const p = pct(item.ownershipPercent);
+  return p === null ? 1 : p;
+}
+
+function evaluateWholeAsset(item, settings, prices) {
   const s = { ...DEFAULT_SETTINGS, ...settings };
   const out = (value, fraction, rule, note, sources = [], flag = null) => ({
     value,
@@ -152,8 +207,12 @@ export function evaluateAsset(item, settings, prices) {
     case 'silver': {
       const m = metalValue(item, prices);
       const metal = item.category === 'gold' ? 'Gold' : 'Silver';
-      const flag = m.missingPrice ? `Enter the ${item.category} price per gram, or the item's value.` : null;
-      const weighed = m.grams ? ` Valued on its pure ${item.category} content (${round(m.grams * m.purity, 2)}g).` : '';
+      let weighed = m.grams ? ` Valued on its pure ${item.category} content (${round(m.grams * m.purity, 2)}g).` : '';
+      if (m.estimated) weighed += ` The weight (${round(m.grams, 1)}g) is an estimate from typical pieces, so weigh it or check the receipt if you can.`;
+      if (m.assumedKarat) weighed += ` Karat assumed to be ${m.assumedKarat}ct.`;
+      let flag = m.missingPrice ? `Enter the ${item.category} price per gram, or the item's value.` : null;
+      if (!flag && m.estimated) flag = 'Do you know the actual weight of this gold? Jeweller receipts usually show it.';
+      if (!flag && m.assumedKarat) flag = 'What karat is this gold? It is usually stamped inside (e.g. 916 = 22ct, 750 = 18ct, 375 = 9ct).';
       if (item.use === 'personal_jewellery') {
         if (s.jewellery === 'exclude') {
           return out(m.value, 0, 'jewellery_exempt',
@@ -203,6 +262,11 @@ export function evaluateAsset(item, settings, prices) {
       if (item.pensionType === 'state') {
         return out(value, 0, 'pension_state', 'The state pension is not an asset you own, so it is not counted. Pension money you have received and saved is counted as cash.', ['nzfPensions']);
       }
+      if (s.pensionView === 'on_access' && !item.accessible) {
+        return out(value, 0, 'pension_on_access',
+          'You chose the view that zakah is not due on a pension until you can access it. NZF takes the cautious view that it is due every year on the zakatable part of the fund.',
+          ['nzfPensions']);
+      }
       const custom = pct(item.zakatablePercent);
       const fraction = custom ?? LONG_TERM_SHARE_PROXY;
       const note = custom !== null
@@ -213,7 +277,9 @@ export function evaluateAsset(item, settings, prices) {
     }
 
     case 'business_stock':
-      return out(num(item.amount), 1, 'business', 'Business stock is valued at the price you would sell it for on your zakah date, and business cash is counted in full.', ['nzfCalc']);
+      return out(num(item.amount), 1, 'business',
+        "Business stock is valued at the price you would sell it for on your zakah date, and business cash and money customers owe you are counted in full. Equipment, premises and vehicles used to run the business are not counted. If you own part of a business, enter your share.",
+        ['nzfCalc']);
 
     case 'receivable': {
       const value = num(item.amount);
@@ -245,6 +311,9 @@ export function evaluateAsset(item, settings, prices) {
     }
 
     default:
+      if (item.personalUse) {
+        return out(num(item.amount), 0, 'personal_use', 'Things you own for your own use (car, furniture, phone, tools) are not zakatable.', ['nzfCalc']);
+      }
       return out(num(item.amount), 1, 'other', 'Counted in full. Check with a scholar if this asset is for personal use (car, furniture, tools), which is not zakatable.', ['nzfCalc'],
         'What is this asset? Personal-use items are not zakatable.');
   }
@@ -252,7 +321,7 @@ export function evaluateAsset(item, settings, prices) {
 
 export function evaluateLiability(item, settings) {
   const s = { ...DEFAULT_SETTINGS, ...settings };
-  const value = num(item.amount);
+  const value = num(item.amount) * ownership(item);
   if (!s.deductDebts) {
     return { value, deductible: 0, note: "Debts not deducted (you chose the Shafi'i view).", flag: null };
   }
@@ -277,7 +346,9 @@ export function evaluateLiability(item, settings) {
     deductible: value,
     note: item.kind === 'instalments_next_12_months'
       ? 'Up to 12 months of payments on a long-term debt can be deducted (not interest).'
-      : 'Debts due within the next 12 months can be deducted.',
+      : item.kind === 'business_due'
+        ? 'Business debts due within the next 12 months are deducted from business assets.'
+        : 'Debts due within the next 12 months can be deducted.',
     flag: null,
   };
 }
@@ -305,6 +376,7 @@ export function calculate({ assets = [], liabilities = [], settings = {}, prices
   const nisab = nisabValue(s, prices);
   const rate = ZAKAT_RATE[s.yearType] ?? ZAKAT_RATE.lunar;
   const zakahIfDue = netZakatable * rate;
+  const alreadyPaid = Math.min(num(s.alreadyPaid), zakahIfDue);
 
   let status;
   if (nisab === null) status = 'missing_prices';
@@ -313,6 +385,7 @@ export function calculate({ assets = [], liabilities = [], settings = {}, prices
   else status = 'due';
 
   const flags = [
+    ...(s.hawl === 'unsure' ? [{ id: 'hawl', question: 'Has your wealth been above the nisab for a full lunar year? We have assumed yes.' }] : []),
     ...assetRows.filter((r) => r.result.flag).map((r) => ({ id: r.id, question: r.result.flag })),
     ...liabilityRows.filter((r) => r.result.flag).map((r) => ({ id: r.id, question: r.result.flag })),
   ];
@@ -329,8 +402,9 @@ export function calculate({ assets = [], liabilities = [], settings = {}, prices
     nisab,
     nisabGrams: NISAB_GRAMS[s.nisabMetal],
     rate,
-    zakahDue: status === 'due' ? zakahIfDue : 0,
+    zakahDue: status === 'due' ? zakahIfDue - alreadyPaid : 0,
     zakahIfDue,
+    alreadyPaid: status === 'due' ? alreadyPaid : 0,
     status,
     flags,
   };

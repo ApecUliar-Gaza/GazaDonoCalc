@@ -71,3 +71,24 @@ npm test
 | Hosting | **Netlify** free tier (static + functions, deploys from GitHub) | Vercel (move functions to `/api`), Cloudflare Pages + Functions |
 | Email | **Brevo** free (300/day, transactional + lists + double opt-in, EU-based) | MailerLite (great newsletters, transactional is paid), Resend + a list tool, Mailchimp (pricier) |
 | AI | Claude via the Anthropic API | none needed: manual entry still works |
+
+## The chat (added 23 Nov 2026)
+
+`public/js/chat.js` asks one question at a time (cash, gold, silver, shares, pension, crypto,
+business, money owed, property, debts, zakah already given, hawl), with an "I'm not sure" tip on
+each figure. It works without AI. If someone types a whole description, it goes to `/api/parse`,
+and the chat then asks only the follow-up questions the engine needs. The detailed table below
+the chat stays as the editable "details" view. All rulings still come from `zakat-engine.js`.
+
+New engine options: `ownershipPercent` on any row (joint accounts, part-owned businesses, money
+held for others), gold estimated from pieces (`piece`, `count`) when the weight is unknown,
+assumed karat (22ct jewellery, 24ct coins) with a flag, `business_due` debts, `personalUse`
+items, settings `alreadyPaid` and `pensionView` (`nzf` or `on_access`).
+
+## Hands photo
+
+Netlify runs `scripts/fetch-hands.mjs` at build time to download "Close up cupped hands" by
+Samantha Hurley from Burst by Shopify (free for commercial use, no attribution required) into
+`public/img/hands.jpg`. To use another photo you hold a licence for, commit it at
+`public/img/hands.jpg` and the script leaves it alone. Adjust `handsLanding` in `config.js` so the
+coin lands in the palms.

@@ -18,8 +18,14 @@ window.ZAKAH_CONFIG = {
   // Optional Cloudflare Turnstile site key to stop bots using the email form.
   turnstileSiteKey: '',
   defaultCurrency: 'GBP',
-  // Optional: a real photo of open, cupped hands to replace the illustration (e.g. 'img/hands.jpg').
-  // handsLanding is where coins land, as % across and down the photo.
-  handsImage: '',
+  // What a gift achieves, from the fundraiser's giving levels: £480 sponsors one orphan for a
+  // year. Shown next to the person's zakah ("enough to sponsor 2 orphans"). null hides it.
+  impactPerYear: 480,
+  // A real photo of open, cupped hands. Netlify downloads the free Burst photo
+  // ("Close up cupped hands" by Samantha Hurley) into img/hands.jpg at build time
+  // (scripts/fetch-hands.mjs). Swap in any photo you hold a licence for at public/img/hands.jpg.
+  // If the file is missing the drawn hands show instead. handsLanding is where coins land,
+  // as % across and down the photo.
+  handsImage: 'img/hands.jpg',
   handsLanding: { x: 50, y: 62 },
 };

@@ -20,6 +20,7 @@ const ALLOWED_SETTINGS = {
   deductDebts: [true, false],
   yearType: ['lunar', 'solar'],
   hawl: ['yes', 'no', 'unsure'],
+  pensionView: ['nzf', 'on_access'],
 };
 
 export default async (req) => {
@@ -79,6 +80,8 @@ function sanitise(body) {
     const x = Number(v);
     return Number.isFinite(x) && x >= 0 && x <= max ? x : 0;
   };
+  settings.alreadyPaid = n(body.settings?.alreadyPaid);
+  const share = (v) => (v === '' || v == null ? null : n(v, 100));
   const str = (v, len = 80) => String(v ?? '').slice(0, len);
   const assets = (Array.isArray(body.assets) ? body.assets : []).slice(0, 40).map((a) => ({
     category: CATEGORIES[a.category] ? a.category : 'other',
@@ -93,11 +96,17 @@ function sanitise(body) {
     propertyUse: str(a.propertyUse, 30),
     strength: str(a.strength, 30),
     zakatablePercent: a.zakatablePercent === '' || a.zakatablePercent == null ? null : n(a.zakatablePercent, 100),
+    ownershipPercent: share(a.ownershipPercent),
+    piece: str(a.piece, 20),
+    count: n(a.count, 1000),
+    personalUse: a.personalUse === true,
+    accessible: a.accessible === true,
   }));
   const liabilities = (Array.isArray(body.liabilities) ? body.liabilities : []).slice(0, 40).map((l) => ({
     kind: LIABILITY_KINDS[l.kind] ? l.kind : 'due_within_12_months',
     description: str(l.description),
     amount: n(l.amount),
+    ownershipPercent: share(l.ownershipPercent),
   }));
   const prices = { goldPerGram: n(body.prices?.goldPerGram, 1e6), silverPerGram: n(body.prices?.silverPerGram, 1e5) };
   return { assets, liabilities, settings, prices };
@@ -181,7 +190,7 @@ export function renderEmail({ firstName, result, fundraiser = null }) {
   const usedSources = [...new Set(result.assets.flatMap((a) => a.result.sources))].concat('nzfNisab', 'quran960');
   const sources = [...new Set(usedSources)].map((k) => `<li><a href="${SOURCES[k].url}">${escapeHtml(SOURCES[k].title)}</a></li>`).join('');
   const s = result.settings;
-  const settingsLine = `Nisab: ${s.nisabMetal} (${result.nisabGrams}g = ${m(result.nisab ?? 0)}). Jewellery: ${s.jewellery === 'include' ? 'included (Hanafi view)' : 'worn jewellery exempt (Maliki, Shafi\'i, Hanbali view)'}. Debts: ${s.deductDebts ? 'deducted' : 'not deducted'}. Rate: ${(result.rate * 100).toFixed(3).replace(/0+$/, '')}% (${s.yearType} year). Prices used: gold ${m(result.prices.goldPerGram)}/g, silver ${m(result.prices.silverPerGram)}/g.`;
+  const settingsLine = `Nisab: ${s.nisabMetal} (${result.nisabGrams}g = ${m(result.nisab ?? 0)}). Jewellery: ${s.jewellery === 'include' ? 'included (Hanafi view)' : 'worn jewellery exempt (Maliki, Shafi\'i, Hanbali view)'}. Debts: ${s.deductDebts ? 'deducted' : 'not deducted'}. Pensions: ${s.pensionView === 'on_access' ? 'counted once you can access them' : 'counted every year (NZF view)'}. Rate: ${(result.rate * 100).toFixed(3).replace(/0+$/, '')}% (${s.yearType} year). Prices used: gold ${m(result.prices.goldPerGram)}/g, silver ${m(result.prices.silverPerGram)}/g.`;
 
   const zakahConfirmed = process.env.FUNDRAISER_ZAKAH_CONFIRMED === 'true';
   const ctaTitle = fundraiser ? (fundraiser.cause ? `Support ${escapeHtml(fundraiser.cause)}` : 'Support this fundraiser') : 'Support orphans in Gaza';
@@ -204,7 +213,7 @@ export function renderEmail({ firstName, result, fundraiser = null }) {
   <p>Here is the zakah breakdown you asked for.</p>
   <div style="background:#f3f7f4;padding:16px;border-radius:10px">
     <p style="margin:0;font-size:14px;color:#555">${escapeHtml(STATUS_TEXT[result.status])}</p>
-    <p style="margin:4px 0 0;font-size:30px;font-weight:bold">${m(result.zakahDue)}</p>
+    <p style="margin:4px 0 0;font-size:30px;font-weight:bold">${m(result.zakahDue)}</p>${result.alreadyPaid ? `<p style="margin:4px 0 0;font-size:13px">${m(result.zakahIfDue)} in total, less ${m(result.alreadyPaid)} you have already given.</p>` : ''}
     ${result.status === 'hawl_not_complete' ? `<p style="margin:4px 0 0">Once a full lunar year has passed with your wealth above the nisab, it would be about ${m(result.zakahIfDue)}.</p>` : ''}
   </div>
   ${cta}

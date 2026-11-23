@@ -20,15 +20,20 @@
 <body>
   <header class="hero">
     <div class="hero-pattern" aria-hidden="true"></div>
+    <nav class="topbar wrap" aria-label="Site">
+      <span class="brand"><span aria-hidden="true">☾</span> Zakah Assistant</span>
+      <a class="btn donate-btn small" id="top-donate" href="#" target="_blank" rel="noopener">Give to Gaza orphans</a>
+    </nav>
     <div class="wrap hero-inner">
       <div class="hero-text">
       <p class="eyebrow"><span class="moon" aria-hidden="true">☾</span> Ramadan zakah, made simple</p>
-      <h1>Work out your zakah in your own words</h1>
-      <p class="lead">Tell us what you have, like you'd tell a friend. We turn it into a clear breakdown using mainstream scholarly guidance, and show every rule we used.</p>
+      <h1>Work out your zakah in a two-minute chat</h1>
+      <p class="lead">Answer a few simple questions. Don't know a figure? We'll show you where to find it. You get a clear breakdown, with every rule explained, and can give it straight to orphans in Gaza.</p>
+      <a class="btn primary big hero-start" href="#describe">Start the chat <span aria-hidden="true">↓</span></a>
       <ul class="trust">
         <li>Based on National Zakat Foundation guidance</li>
         <li>Free, and we don't store your figures</li>
-        <li>Takes about a minute</li>
+        <li>Takes about two minutes</li>
       </ul>
       <p class="hosted-by hidden" id="hosted-by"></p>
       </div>
@@ -36,25 +41,24 @@
   </header>
 
   <main class="wrap">
-    <section class="card describe" id="describe">
-      <label for="wealth-text" class="step"><span>1</span> Describe your savings and assets</label>
-      <textarea id="wealth-text" rows="4" maxlength="1500" placeholder="e.g. I have £5k in savings, £1,200 in my current account, about 30g of 22ct gold jewellery I wear, a workplace pension worth £40k, and £1,500 left on my credit card."></textarea>
-      <div class="chips" aria-label="Examples">
-        <span class="chips-label">Try an example:</span>
-        <button type="button" class="chip" data-example="£5k savings, some gold jewellery I wear (about 40g, 22 carat) and a workplace pension of £28,000">Savings, gold and a pension</button>
-        <button type="button" class="chip" data-example="£12,000 in a cash ISA, £8,000 of shares in a stocks and shares ISA that I hold long term, £600 of bitcoin, and I owe £2,000 on my credit card">ISAs, shares and crypto</button>
-        <button type="button" class="chip" data-example="I run a small online shop: £6,000 of stock at sale price, £3,500 in the business account, customers owe me £900. Personally £2k savings and a £180k mortgage on my home, paying £950 a month.">Small business</button>
+    <section class="card chat" id="describe" aria-label="Zakah chat">
+      <div class="chat-head">
+        <span class="chat-avatar" aria-hidden="true">☾</span>
+        <div><strong>Zakah assistant</strong><span>Answers follow National Zakat Foundation guidance</span></div>
+        <button type="button" class="btn link small" data-restart>Start again</button>
       </div>
-      <div class="row-actions">
-        <button type="button" id="parse-btn" class="btn primary big">Work it out <span aria-hidden="true">→</span></button>
-        <button type="button" id="manual-btn" class="btn link">Or enter items myself</button>
-      </div>
-      <p id="parse-status" class="status" role="status" aria-live="polite"></p>
-      <p class="fineprint">What you type is sent to an AI service only to read it into the list below. We don't store it.</p>
+      <div class="chat-log" role="log" aria-live="polite"></div>
+      <div class="chat-chips"></div>
+      <form class="chat-form" autocomplete="off">
+        <input class="chat-input" type="text" maxlength="1500" aria-label="Your answer" placeholder="Type your answer…">
+        <button type="submit" class="btn primary chat-send" aria-label="Send">Send</button>
+      </form>
+      <p class="fineprint">If you type a full description, it is sent to an AI service only to read it. We don't store it. The rulings come from fixed rules, not the AI.</p>
     </section>
 
     <section class="card hidden" id="review">
-      <h2 class="step"><span>2</span> Check what we understood</h2>
+      <h2 class="step"><span>✎</span> The details: change any figure</h2>
+      <p class="hint">Everything you told the assistant is here. Change anything and your zakah updates straight away.</p>
       <div id="questions" class="callout hidden"></div>
       <h3 class="section-label">Assets</h3>
       <div id="asset-list"></div>
@@ -118,7 +122,7 @@
     </section>
 
     <section class="card hidden result" id="result" aria-live="polite">
-      <h2 class="step"><span>3</span> Your zakah</h2>
+      <h2 class="step"><span>✓</span> Your zakah</h2>
       <div class="total">
         <p id="status-text"></p>
         <p id="zakah-amount" class="amount"></p>
@@ -199,7 +203,7 @@
       <div class="scene-message" id="giving-message" aria-live="polite"></div>
       <h2 id="scene-title" class="scene-title">Let your zakah reach the hands that need it</h2>
       <a id="scene-donate" class="btn donate-btn big" href="#" target="_blank" rel="noopener">Give to Gaza orphans</a>
-      <p class="fineprint scene-note" id="scene-note">Work out your zakah first? <a href="#describe">Start at the top</a>.</p>
+      <p class="fineprint scene-note" id="scene-note">Work out your zakah first? <a href="#describe">Start the chat</a>.</p>
     </div>
   </section>
 
@@ -208,8 +212,8 @@
     <p><a href="privacy.html" target="_top">Privacy</a> · <a href="share.html" target="_top">Make your own link</a></p>
   </footer>
 
-  <div class="sticky-total hidden" id="sticky-total" aria-hidden="true">
-    <span>Your zakah</span><strong id="sticky-amount">£0.00</strong><a href="#result">See breakdown</a>
+  <div class="sticky-total hidden" id="sticky-total">
+    <span>Your zakah</span><strong id="sticky-amount">£0.00</strong><a href="#result" class="sticky-details">Details</a><a href="#" id="sticky-donate" class="sticky-give" target="_blank" rel="noopener">Give it now</a>
   </div>
 
   <template id="asset-tpl">
@@ -236,6 +240,7 @@
     </div>
   </template>
 
+  <div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
   <script type="module" src="js/app.js"></script>
 </body>
 </html>
