@@ -133,3 +133,20 @@ test('missing prices reported, not silently zero', () => {
 test('strings with currency symbols and commas are parsed', () => {
   close(evaluateAsset({ category: 'cash', amount: '£5,000' }, {}, prices).zakatable, 5000);
 });
+
+test('debt with unknown due date is not deducted and is flagged', () => {
+  const r = evaluateLiability({ kind: 'unknown', amount: 12000 }, {});
+  close(r.deductible, 0);
+  assert.ok(r.flag);
+});
+
+test("Wahaj's example: £10k savings and £12k debt", () => {
+  const assets = [{ category: 'cash', amount: 10000 }];
+  const due = calculate({ assets, liabilities: [{ kind: 'due_within_12_months', amount: 12000 }], prices });
+  close(due.netZakatable, 0);
+  assert.equal(due.status, 'below_nisab');
+  const instalments = calculate({ assets, liabilities: [{ kind: 'instalments_next_12_months', amount: 3000 }], prices });
+  close(instalments.zakahDue, 175);
+  const unknown = calculate({ assets, liabilities: [{ kind: 'unknown', amount: 12000 }], prices });
+  close(unknown.zakahDue, 250);
+});

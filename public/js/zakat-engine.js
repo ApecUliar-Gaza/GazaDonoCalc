@@ -66,6 +66,7 @@ export const LIABILITY_KINDS = {
   due_within_12_months: { label: 'Debt due within the next 12 months', hint: 'Bills, personal loans, credit cards, money you owe friends or family.' },
   instalments_next_12_months: { label: 'Next 12 months of a long-term debt', hint: 'e.g. 12 mortgage or car-finance payments, without the interest.' },
   long_term_total: { label: 'Full balance of a long-term debt', hint: 'Not deductible in full. Enter only the next 12 months of payments instead.' },
+  unknown: { label: 'Not sure when it is due', hint: 'Choose another type once you know how much is due in the next 12 months.' },
 };
 
 // Options shown in the review table for each detail field.
@@ -254,6 +255,14 @@ export function evaluateLiability(item, settings) {
   const value = num(item.amount);
   if (!s.deductDebts) {
     return { value, deductible: 0, note: "Debts not deducted (you chose the Shafi'i view).", flag: null };
+  }
+  if (item.kind === 'unknown' || !LIABILITY_KINDS[item.kind]) {
+    return {
+      value,
+      deductible: 0,
+      note: 'Not deducted yet (the cautious view). Only debts due within the next 12 months can be deducted, so tell us how much of this is due in that time.',
+      flag: 'How much of this debt do you have to repay in the next 12 months?',
+    };
   }
   if (item.kind === 'long_term_total') {
     return {
