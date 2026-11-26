@@ -37,6 +37,21 @@ export function parsePieces(text) {
   return Object.entries(out).map(([piece, count]) => ({ piece, count }));
 }
 
+// The gold question's answer: weight (grams), value (money), or unclear.
+// A bare number is unclear: we ask whether it's grams or pounds rather than guess.
+export function goldAnswer(text) {
+  const t = String(text).toLowerCase().trim();
+  if (t === 'weight') return { kind: 'grams', n: null };
+  if (t === 'value') return { kind: 'money', n: null };
+  if (t === 'none' || isUnsure(t) || /^no\b/.test(t)) return { kind: 'pieces', n: null };
+  if (parsePieces(t).length && !/\d\s*(g|gm|grams?)\b|[£$€]/.test(t)) return { kind: 'pieces', n: null, text: t };
+  const n = parseMoney(t);
+  if (/\d\s*(g|gm|gms|grams?|grammes?)\b|\bweigh|\bgrams?\b/.test(t)) return { kind: 'grams', n: /\d/.test(t) ? n : null };
+  if (/[£$€]|\bpounds?\b|\bquid\b|\bgbp\b|\d\s*k\b|\bworth\b|\bvalue\b|\bcost\b/.test(t)) return { kind: 'money', n: /\d/.test(t) ? n : null };
+  if (n) return { kind: 'ambiguous', n };
+  return { kind: 'pieces', n: null };
+}
+
 export function startChat({ root, state, newId, onChange, onDone, parseText }) {
   const log = root.querySelector('.chat-log');
   const form = root.querySelector('.chat-form');
@@ -44,6 +59,7 @@ export function startChat({ root, state, newId, onChange, onDone, parseText }) {
   const chipsEl = root.querySelector('.chat-chips');
   const cur = () => state.settings.currency;
   const m = (v) => formatMoney(v, cur()).replace(/\.00$/, '');
+  const curName = () => ({ GBP: 'pounds', USD: 'dollars', EUR: 'euros', CAD: 'dollars', AUD: 'dollars' })[cur()] || cur();
   let handler = null; // what to do with the next typed answer
   let queue = []; // steps still to ask
   let busy = false;
@@ -376,29 +392,34 @@ export function startChat({ root, state, newId, onChange, onDone, parseText }) {
   // Gold: weight if known, value if known, otherwise estimate from pieces.
   function goldItem(use) {
     const label = use === 'investment' ? 'gold coins or bars' : 'gold jewellery';
-    ask(`For your ${label}: <b>do you know the weight, or what it's worth?</b>`, [
-      { label: 'I know the weight', value: 'weight' }, { label: 'I know the value', value: 'value' }, { label: 'No idea', value: 'none' },
+    const description = use === 'investment' ? 'Gold coins/bars' : 'Gold jewellery';
+    const afterGrams = (g) => {
+      ask('What karat is it?', [
+        { label: '22ct', value: '22' }, { label: '24ct', value: '24' }, { label: '21ct', value: '21' }, { label: '18ct', value: '18' }, { label: '9ct', value: '9' }, { label: 'Not sure', value: '?' },
+      ], (k) => {
+        const karat = [24, 22, 21, 18, 14, 10, 9].includes(Number(parseMoney(k))) ? Number(parseMoney(k)) : null;
+        if (!karat) tip('Look for a stamp inside the piece: <b>916</b> means 22ct, <b>750</b> is 18ct, <b>375</b> is 9ct, <b>999</b> is 24ct. Jewellery bought in South Asia or the Gulf is usually 21-22ct, and in the UK often 9ct. I\'ve assumed ' + (use === 'investment' ? '24ct' : '22ct') + ' for now.');
+        addAsset({ category: 'gold', description, grams: g, karat, use });
+        next();
+      });
+    };
+    const withValue = (n) => {
+      if (n) addAsset({ category: 'gold', description, amount: n, use });
+      next();
+    };
+    const askGrams = () => askAmount('How many <b>grams</b>, roughly?', 'Kitchen scales are fine. Receipts from jewellers usually show the weight.', (g) => (g ? afterGrams(g) : next()), { noneLabel: null });
+    const askValue = () => askAmount(`What is it worth today, in <b>${esc(curName())}</b>?`, 'A jeweller can value it. If you know the weight instead, type it with a "g", e.g. 40g.', withValue, { noneLabel: null });
+    ask(`For your ${label}: <b>do you know its weight in grams, or its value in ${esc(curName())}?</b>`, [
+      { label: 'Weight in grams', value: 'weight' }, { label: `Value in ${curName()}`, value: 'value' }, { label: 'No idea', value: 'none' },
     ], (v) => {
-      if (/weight|gram|^\d/i.test(v)) {
-        const pre = parseMoney(v);
-        const afterGrams = (g) => {
-          ask('What karat is it?', [
-            { label: '22ct', value: '22' }, { label: '24ct', value: '24' }, { label: '21ct', value: '21' }, { label: '18ct', value: '18' }, { label: '9ct', value: '9' }, { label: 'Not sure', value: '?' },
-          ], (k) => {
-            const karat = [24, 22, 21, 18, 14, 10, 9].includes(Number(parseMoney(k))) ? Number(parseMoney(k)) : null;
-            if (!karat) tip('Look for a stamp inside the piece: <b>916</b> means 22ct, <b>750</b> is 18ct, <b>375</b> is 9ct, <b>999</b> is 24ct. Jewellery bought in South Asia or the Gulf is usually 21-22ct, and in the UK often 9ct. I\'ve assumed ' + (use === 'investment' ? '24ct' : '22ct') + ' for now.');
-            addAsset({ category: 'gold', description: use === 'investment' ? 'Gold coins/bars' : 'Gold jewellery', grams: g, karat, use });
-            next();
-          });
-        };
-        if (pre && v !== 'weight') return afterGrams(pre);
-        return askAmount('How many grams, roughly?', 'Kitchen scales are fine. Receipts from jewellers usually show the weight.', (g) => (g ? afterGrams(g) : next()), { noneLabel: null });
-      }
-      if (/value|worth|£/i.test(v)) {
-        return askAmount("What's it worth today?", 'A jeweller can value it, or use its weight instead: tap back and say you know the weight.', (n) => {
-          if (n) addAsset({ category: 'gold', description: use === 'investment' ? 'Gold coins/bars' : 'Gold jewellery', amount: n, use });
-          next();
-        }, { noneLabel: null });
+      const a = goldAnswer(v);
+      if (a.kind === 'grams') return a.n ? afterGrams(a.n) : askGrams();
+      if (a.kind === 'money') return a.n ? withValue(a.n) : askValue();
+      if (a.kind === 'pieces' && a.text) return onPieces(a.text);
+      if (a.kind === 'ambiguous') {
+        return ask(`Is that <b>${esc(m(a.n))}</b> or <b>${a.n} grams</b>?`, [
+          { label: m(a.n), value: 'money' }, { label: `${a.n} grams`, value: 'grams' },
+        ], (w) => (/gram|^g$/i.test(w) ? afterGrams(a.n) : withValue(a.n)));
       }
       const onPieces = (t) => {
         const pieces = parsePieces(t);

@@ -107,7 +107,7 @@ function renderChatResult(result) {
          <p class="fineprint">We copy the amount for you, so you can paste it on the donation page. ${zakahNote()}</p>`
       : `<p>You can still give sadaqah to orphans in Gaza. Even a little is loved by Allah.</p><a class="btn donate-btn" href="${esc($('#donate-link').href)}" target="_blank" rel="noopener">Give sadaqah</a>`)
     : '';
-  chatResult.innerHTML = `${head}${result.status === 'due' ? sums : ''}${flags}${give}
+  chatResult.innerHTML = `${scholarLine}${head}${result.status === 'due' ? sums : ''}${flags}${give}
     <p class="res-links"><a href="#email-form">Email me this breakdown</a> · <a href="#result">How each item was treated</a> · <button type="button" class="linkish" data-restart>Start again</button></p>`;
 }
 
@@ -461,6 +461,21 @@ function setupCoins() {
   pageCoinScene({ scene: $('#giving-scene'), stage: $('#scene-giving'), messageEl: $('#giving-message') });
 }
 
+// "Scholar approved" badge, shown only once config.scholarReview.approved is set.
+function setupScholarBadge() {
+  const r = cfg.scholarReview;
+  if (!r?.approved) return;
+  const text = `Reviewed and approved by ${r.name ? esc(r.name) : 'a qualified scholar'}${r.date ? `, ${esc(r.date)}` : ''}`;
+  const badge = $('#scholar-badge');
+  badge.querySelector('.scholar-text').innerHTML = text;
+  badge.classList.remove('hidden');
+  const sub = document.querySelector('#describe .chat-head span:not(.chat-avatar)');
+  if (sub) sub.textContent = `Scholar approved · follows National Zakat Foundation guidance`;
+  scholarLine = `<p class="res-scholar"><span aria-hidden="true">✓</span> ${text}</p>`;
+}
+let scholarLine = '';
+
+setupScholarBadge();
 setupDonate();
 mirrorDonate();
 setupCoins();

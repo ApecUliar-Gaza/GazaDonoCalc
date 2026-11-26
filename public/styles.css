@@ -501,3 +501,9 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 .hasanat.narrow.maxed .hasanat-label { transform: translateX(-100%); }
 @media (prefers-reduced-motion: reduce) { .hasanat { display: none; } }
 body.embed .hasanat { display: none; }
+
+/* ---------- scholar approval badge ---------- */
+.scholar-badge { display: inline-flex; align-items: center; gap: 10px; margin: 18px 0 0; padding: 8px 14px 8px 8px; border-radius: 999px;
+  background: rgba(31, 164, 99, .12); border: 1px solid rgba(31, 164, 99, .5); color: #fff; font-weight: 600; font-size: .92rem; }
+.scholar-badge .seal { width: 26px; height: 26px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--green); color: #fff; font-size: .85rem; box-shadow: 0 0 0 3px rgba(31, 164, 99, .25); }
+.res-scholar { display: inline-block; margin: 0 0 10px; font-size: .82rem; font-weight: 600; color: var(--green-light); }

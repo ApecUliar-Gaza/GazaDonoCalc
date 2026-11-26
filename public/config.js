@@ -18,6 +18,9 @@ window.ZAKAH_CONFIG = {
   // Optional Cloudflare Turnstile site key to stop bots using the email form.
   turnstileSiteKey: '',
   defaultCurrency: 'GBP',
+  // Scholar sign-off badge. Only set approved: true once the scholar has signed off the
+  // review pack. The badge then shows in the header and under the result.
+  scholarReview: { approved: false, name: '', date: '' }, // e.g. { approved: true, name: 'Sheikh Ahmad', date: 'December 2026' }
   // What a gift achieves, from the fundraiser's giving levels: £480 sponsors one orphan for a
   // year. Shown next to the person's zakah ("enough to sponsor 2 orphans"). null hides it.
   impactPerYear: 480,

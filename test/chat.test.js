@@ -21,3 +21,25 @@ test('parsePieces counts gold pieces', () => {
   assert.deepEqual(parsePieces('a pair of earrings and 2 gold sovereigns'), [{ piece: 'earrings', count: 1 }, { piece: 'coin', count: 2 }]);
   assert.deepEqual(parsePieces('nothing'), []);
 });
+
+import { goldAnswer } from '../public/js/chat.js';
+
+test('gold question: a value is treated as money, never as grams', () => {
+  assert.deepEqual(goldAnswer('£2000'), { kind: 'money', n: 2000 });
+  assert.deepEqual(goldAnswer('2k'), { kind: 'money', n: 2000 });
+  assert.deepEqual(goldAnswer("it's worth about 1500"), { kind: 'money', n: 1500 });
+  assert.deepEqual(goldAnswer('3000 pounds'), { kind: 'money', n: 3000 });
+  assert.deepEqual(goldAnswer('value'), { kind: 'money', n: null });
+});
+
+test('gold question: grams are recognised', () => {
+  assert.deepEqual(goldAnswer('40g'), { kind: 'grams', n: 40 });
+  assert.deepEqual(goldAnswer('about 35 grams'), { kind: 'grams', n: 35 });
+  assert.deepEqual(goldAnswer('weight'), { kind: 'grams', n: null });
+});
+
+test('gold question: a bare number is asked about, not guessed', () => {
+  assert.deepEqual(goldAnswer('2000'), { kind: 'ambiguous', n: 2000 });
+  assert.equal(goldAnswer('2 bangles and a necklace').kind, 'pieces');
+  assert.equal(goldAnswer('no idea').kind, 'pieces');
+});
